@@ -1,0 +1,178 @@
+{% extends "agent/agent_base.html" %}
+
+{% block title %}Agent Dashboard - PropNest{% endblock %}
+
+{% block agent_content %}
+    <!-- Dashboard Header -->
+    <div class="bg-indigo-900 text-white py-8 px-6 lg:px-10">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold mb-2">Welcome back, {{ request.user.first_name|default:request.user.username }}!</h1>
+                <p class="text-indigo-200 mb-0">Manage your properties and tour bookings from here.</p>
+            </div>
+            <div class="flex-shrink-0">
+                <a href="#" class="bg-white text-indigo-900 font-bold py-2 px-6 rounded-md hover:bg-gray-100 transition shadow-md inline-flex items-center text-decoration-none">
+                    <i class="fa-solid fa-plus mr-2"></i> Add New Property
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Widgets & Data -->
+    <section class="p-6 lg:p-10">
+        
+        <!-- STATS GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <!-- Total Properties Card (Clickable) -->
+            <!-- যদি filter=active না থাকে, তার মানে ডিফল্টভাবে All সিলেক্ট করা আছে -->
+            <a href="?filter=all" class="block bg-white p-6 rounded-xl shadow-sm border flex items-center gap-4 transition text-decoration-none group {% if request.GET.filter != 'available' %}border-indigo-400 ring-2 ring-indigo-100{% else %}border-gray-200 hover:border-indigo-300{% endif %}">
+                <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-building"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm font-medium mb-1">Total Properties</p>
+                    <h3 class="text-2xl font-bold text-gray-800">{{ property_count|default:"0" }}</h3>
+                </div>
+            </a>
+
+            <!-- Available Listings Card (Clickable) -->
+            <a href="?filter=available" class="block bg-white p-6 rounded-xl shadow-sm border flex items-center gap-4 transition text-decoration-none group {% if request.GET.filter == 'available' %}border-green-400 ring-2 ring-green-100{% else %}border-gray-200 hover:border-green-300{% endif %}">
+                <div class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-check-double"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm font-medium mb-1">Available Listings</p>
+                    <h3 class="text-2xl font-bold text-gray-800">{{ active_count|default:"0" }}</h3>
+                </div>
+            </a>
+                        
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
+                <div class="w-14 h-14 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-2xl flex-shrink-0">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm font-medium mb-1">Pending Tours</p>
+                    <h3 class="text-2xl font-bold text-gray-800">{{ tour_bookings_count|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROPERTIES & TOURS GRID -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            
+            <!-- MY PROPERTIES LIST -->
+            <div class="xl:col-span-2">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                        <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-list mr-2 text-indigo-600"></i> My Properties</h2>
+                        <a href="#" class="text-sm font-medium text-indigo-600 hover:text-indigo-800 text-decoration-none">View All</a>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-white text-gray-500 text-sm border-b border-gray-200">
+                                    <th class="px-6 py-3 font-medium">Property</th>
+                                    <th class="px-6 py-3 font-medium">Status</th>
+                                    <th class="px-6 py-3 font-medium">Price</th>
+                                    <th class="px-6 py-3 font-medium text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for property in properties %}
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                    <td class="px-6 py-4 flex items-center gap-3">
+                                        <div class="w-12 h-12 rounded bg-gray-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                            {% if property.first_image %}
+                                                <img src="{{ property.first_image.image.url }}" class="w-full h-full object-cover">
+                                            {% else %}
+                                                <i class="fa-solid fa-image text-gray-400"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-bold text-gray-800 mb-0 truncate w-40 md:w-64">{{ property.title }}</p>
+                                            <p class="text-xs text-gray-500 mb-0">{{ property.city }}</p>
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="px-6 py-4">
+                                        {% if property.status == 'Available' %}
+                                            <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-md font-medium border border-green-200">Available</span>
+                                        {% elif property.status == 'Sold' %}
+                                            <span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-md font-medium border border-red-200">Sold</span>
+                                        {% else %}
+                                            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-md font-medium border border-blue-200">{{ property.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td class="px-6 py-4 text-sm font-semibold text-gray-700">
+                                        ${{ property.price }}
+                                    </td>
+                                    
+                                    <td class="px-6 py-4 text-right space-x-2">
+                                        <a href="#" class="text-gray-400 hover:text-indigo-600 transition" title="View"><i class="fa-solid fa-eye"></i></a>
+                                        <a href="#" class="text-gray-400 hover:text-green-600 transition" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                                        <a href="#" class="text-gray-400 hover:text-red-600 transition" title="Delete"><i class="fa-solid fa-trash-can"></i></a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                                        You haven't listed any properties yet.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOUR BOOKINGS -->
+            <div class="xl:col-span-1">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                        <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-calendar-day mr-2 text-indigo-600"></i> Tour Requests</h2>
+                    </div>
+                    
+                    <div class="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+                        {% for booking in tour_bookings %}
+                        <div class="border border-gray-100 rounded-lg p-4 hover:shadow-md transition bg-white">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="text-sm font-bold text-gray-800 truncate">{{ booking.property.title }}</h4>
+                                {% if booking.status == 'Pending' %}
+                                    <span class="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">Pending</span>
+                                {% else %}
+                                    <span class="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">{{ booking.status }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <p class="text-xs text-gray-600 mb-1"><i class="fa-regular fa-user mr-1"></i> {{ booking.buyer.username }}</p>
+                            <p class="text-xs text-gray-600 mb-3"><i class="fa-regular fa-clock mr-1"></i> {{ booking.scheduled_date }} at {{ booking.scheduled_time }}</p>
+                            
+                            {% if booking.status == 'Pending' %}
+                            <div class="flex gap-2">
+                                <form method="POST" action="#" class="w-1/2 m-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold py-1.5 rounded transition border border-indigo-200">Confirm</button>
+                                </form>
+                                <form method="POST" action="#" class="w-1/2 m-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="w-full bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold py-1.5 rounded transition border border-red-200">Cancel</button>
+                                </form>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-6">
+                            <i class="fa-regular fa-calendar-xmark text-4xl text-gray-300 mb-2"></i>
+                            <p class="text-sm text-gray-500">No recent tour requests.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+{% endblock %}

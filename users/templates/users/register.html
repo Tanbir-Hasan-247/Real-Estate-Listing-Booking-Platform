@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}User Registration{% endblock %}
+
+{% block content %}
+        <div class="flex-grow flex items-center justify-center py-10">
+            <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md border">
+                <h2 class="text-2xl text-center font-bold text-gray-800 mb-4">Register</h2>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        {{ form.as_p }}
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition">
+                            Register
+                        </button>
+                    </div>
+                    <div class="mt-2 text-center">
+                        <span class="text-sm text-gray-600">
+                            Already have an account? <a href="{% url 'login' %}" class="text-indigo-600 hover:underline">Log in</a>
+                        </span>
+                    </div>
+                </form>
+            </div>
+        </div>
+{% endblock %}

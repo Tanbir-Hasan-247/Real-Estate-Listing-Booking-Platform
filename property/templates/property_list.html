@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Property List - PropNest{% endblock %}
+
+{% block content %}
+    <div class="bg-indigo-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold mb-4">Find Your Perfect Property</h1>
+            <p class="text-indigo-200">Browse all available properties for sale and rent.</p>
+        </div>
+    </div>
+
+    <section class="flex-grow max-w-7xl mx-auto px-4 py-10 w-full flex flex-col lg:flex-row gap-8">
+      
+      <aside class="w-full lg:w-1/4">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 sticky top-24">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
+                <i class="fa-solid fa-filter mr-2 text-indigo-600"></i> Advanced Filter
+            </h3>
+            
+            <form id="filter-form" method="GET" action="." class="space-y-4">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search keyword</label>
+                    <input type="text" name="search" placeholder="City, Address, Title..." class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" value="{{ request.GET.search }}">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Listing Type</label>
+                    <select name="listing_type" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-indigo-500">
+                        <option value="">All Status</option>
+                        <option value="sale" {% if request.GET.listing_type == 'sale' %}selected{% endif %}>For Sale</option>
+                        <option value="rent" {% if request.GET.listing_type == 'rent' %}selected{% endif %}>For Rent</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
+                    <select name="property_type" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-indigo-500">
+                        <option value="">All Types</option>
+                        <option value="apartment" {% if request.GET.property_type == 'apartment' %}selected{% endif %}>Apartment</option>
+                        <option value="house" {% if request.GET.property_type == 'house' %}selected{% endif %}>House</option>
+                        <option value="villa" {% if request.GET.property_type == 'villa' %}selected{% endif %}>Villa</option>
+                        <option value="land" {% if request.GET.property_type == 'land' %}selected{% endif %}>Land</option>
+                        <option value="shop" {% if request.GET.property_type == 'shop' %}selected{% endif %}>Shop</option>
+                        <option value="office" {% if request.GET.property_type == 'office' %}selected{% endif %}>Office</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>
+                    <select name="bedrooms" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-indigo-500">
+                        <option value="">Any</option>
+                        <option value="1" {% if request.GET.bedrooms == '1' %}selected{% endif %}>1+</option>
+                        <option value="2" {% if request.GET.bedrooms == '2' %}selected{% endif %}>2+</option>
+                        <option value="3" {% if request.GET.bedrooms == '3' %}selected{% endif %}>3+</option>
+                        <option value="4" {% if request.GET.bedrooms == '4' %}selected{% endif %}>4+</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Min Price</label>
+                        <input type="number" name="min_price" placeholder="0" class="w-full border border-gray-300 rounded-md px-3 py-2" value="{{ request.GET.min_price }}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Max Price</label>
+                        <input type="number" name="max_price" placeholder="Any" class="w-full border border-gray-300 rounded-md px-3 py-2" value="{{ request.GET.max_price }}">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition mt-4">
+                    <i class="fa-solid fa-magnifying-glass mr-2"></i> Apply Filters
+                </button>
+                
+                <a href="." class="block text-center w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-md transition mt-2 text-decoration-none">
+                    Reset Filters
+                </a>
+            </form>
+        </div>
+      </aside>
+
+      <section class="w-full lg:w-3/4">
+        
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800">{{ properties.count|default:"0" }} Properties Found</h2>
+            
+            <select name="sort" form="filter-form" onchange="document.getElementById('filter-form').submit();" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none cursor-pointer">
+                <option value="newest" {% if request.GET.sort == 'newest' %}selected{% endif %}>Newest First</option>
+                <option value="price_asc" {% if request.GET.sort == 'price_asc' %}selected{% endif %}>Price (Low to High)</option>
+                <option value="price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>Price (High to Low)</option>
+            </select>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            
+            {% for property in properties %}
+            <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group flex flex-col border border-gray-100">
+              
+              <a href="{% url 'property_detail' property.pk %}" class="block relative h-56 overflow-hidden text-decoration-none">
+                {% if property.first_image %}
+                    <img src="{{ property.first_image.image.url }}" alt="{{ property.title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                {% else %}
+                    <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Placeholder" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                {% endif %}
+            
+                <div class="absolute top-4 left-4 {% if property.listing_type == 'rent' %}bg-green-500{% else %}bg-indigo-600{% endif %} text-white text-xs font-bold px-3 py-1 rounded shadow-sm">
+                    {{ property.get_listing_type_display }}
+                </div>
+            
+                <div class="absolute bottom-4 right-4 bg-gray-900 bg-opacity-80 backdrop-blur-sm text-white text-sm font-bold px-3 py-1 rounded shadow-sm">
+                    ${{ property.price }}{% if property.listing_type == 'rent' %} / mo{% endif %}
+                </div>
+              </a>
+              
+              <div class="p-5 flex-grow flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="text-xs text-indigo-600 font-bold uppercase tracking-wider">{{ property.property_type.name }}</p>
+                        <span class="text-[10px] text-gray-500 font-medium"><i class="fa-regular fa-clock mr-1"></i>{{ property.created_at|timesince }} ago</span>
+                    </div>
+                    <a href="{% url 'property_detail' property.pk %}" class="text-decoration-none">
+                        <h3 class="text-lg font-bold text-gray-800 mb-2 line-clamp-1 hover:text-indigo-600 transition-colors">{{ property.title }}</h3>
+                    </a>
+                    <p class="text-gray-500 text-sm mb-4"><i class="fa-solid fa-location-dot mr-2 text-gray-400"></i>{{ property.location }}, {{ property.city }}</p>
+                </div>
+                
+                <div>
+                    <div class="flex justify-between text-gray-600 text-xs font-medium mb-4">
+                      {% if property.bedrooms %}
+                      <span title="Bedrooms"><i class="fa-solid fa-bed mr-1 text-gray-400"></i>{{ property.bedrooms }} Beds</span>
+                      {% endif %}
+                      {% if property.bathrooms %}
+                      <span title="Bathrooms"><i class="fa-solid fa-bath mr-1 text-gray-400"></i>{{ property.bathrooms }} Baths</span>
+                      {% endif %}
+                      <span title="Area"><i class="fa-solid fa-vector-square mr-1 text-gray-400"></i>{{ property.area_sqft }} sqft</span>
+                    </div>
+                    
+                    <div class="pt-4 border-t border-gray-100 flex gap-2">
+                        <a href="{% url 'property_detail' property.pk %}" class="w-full text-center bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold py-2 rounded-lg transition text-sm text-decoration-none border border-gray-200">
+                            View Details
+                        </a>
+                        <a href="{% url 'property_detail' property.pk %}" class="w-full text-center bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-semibold py-2 rounded-lg transition text-sm text-decoration-none border border-indigo-100 hover:border-indigo-600">
+                            <i class="fa-regular fa-calendar-check mr-1"></i> Book Tour
+                        </a>
+                    </div>
+                </div>
+              </div>
+            </div>
+            
+            {% empty %}
+            <div class="col-span-1 md:col-span-2 xl:col-span-3 text-center py-16 bg-white rounded-xl border border-gray-200">
+                <i class="fa-solid fa-house-circle-xmark text-6xl text-gray-300 mb-4"></i>
+                <h3 class="text-2xl font-bold text-gray-700 mb-2">No Properties Found</h3>
+                <p class="text-gray-500">Try adjusting your filters to find what you are looking for.</p>
+                <a href="." class="inline-block mt-4 text-indigo-600 hover:text-indigo-800 font-medium">Clear all filters</a>
+            </div>
+            {% endfor %}
+
+        </div>
+
+      </section>
+    </section>
+
+{% endblock %}

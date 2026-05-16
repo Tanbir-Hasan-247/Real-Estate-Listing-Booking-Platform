@@ -1,0 +1,74 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Manage Property Types - Admin{% endblock %}
+
+{% block admin_content %}
+    <div class="bg-indigo-900 text-white py-8 px-6 lg:px-10">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold mb-2">Property Types</h1>
+                <p class="text-indigo-200 mb-0">Add, edit, or remove property categories.</p>
+            </div>
+            <div class="flex-shrink-0">
+                <a href="#" class="bg-white text-indigo-900 font-bold py-2 px-6 rounded-md hover:bg-gray-100 transition shadow-md inline-flex items-center text-decoration-none">
+                    <i class="fa-solid fa-plus mr-2"></i> Add New Type
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <section class="p-6 lg:p-10 max-w-5xl">
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-list-check mr-2 text-indigo-600"></i> All Categories</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-white text-gray-500 text-sm border-b border-gray-200">
+                            <th class="px-6 py-4 font-medium uppercase tracking-wider w-16">ID</th>
+                            <th class="px-6 py-4 font-medium uppercase tracking-wider">Type Name</th>
+                            <th class="px-6 py-4 font-medium uppercase tracking-wider">Total Listings</th>
+                            <th class="px-6 py-4 font-medium uppercase tracking-wider text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        
+                        {% for p_type in property_types %}
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                #{{ p_type.id }}
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="font-bold text-gray-800">{{ p_type.name }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">
+                                <span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full font-bold text-xs">{{ p_type.properties.count|default:"0" }} Listings</span>
+                            </td>
+                            <td class="px-6 py-4 text-right space-x-3">
+                                <a href="#" class="text-gray-400 hover:text-green-600 transition" title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                                <a href="#" class="text-gray-400 hover:text-red-600 transition" title="Delete">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+                                <i class="fa-solid fa-folder-open text-3xl mb-3 text-gray-300 block"></i>
+                                No property types found. Please add one.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </section>
+{% endblock %}

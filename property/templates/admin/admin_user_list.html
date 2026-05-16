@@ -1,0 +1,120 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}User Management - Admin Panel{% endblock %}
+
+{% block admin_content %}
+    <div class="bg-indigo-900 text-white py-8 px-6 lg:px-10">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold mb-2">User Management</h1>
+                <p class="text-indigo-200 mb-0">View, edit, or manage all registered users on the platform.</p>
+            </div>
+            <div class="flex-shrink-0">
+                <a href="#" class="bg-white text-indigo-900 font-bold py-2 px-6 rounded-md hover:bg-gray-100 transition shadow-md inline-flex items-center text-decoration-none">
+                    <i class="fa-solid fa-user-plus mr-2"></i> Add New User
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <section class="p-6 lg:p-10">
+        
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-gray-600 font-medium">
+                Total <span class="text-indigo-600 font-bold">{{ users.count }}</span> users found
+            </div>
+            
+            <form method="GET" action="." class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <div class="relative w-full sm:w-64">
+                    <input type="text" name="search" placeholder="Search name or email..." value="{{ request.GET.search }}" 
+                           class="w-full border border-gray-300 rounded-md py-2 pl-10 pr-3 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400"></i>
+                </div>
+                
+                <select name="role" onchange="this.form.submit()" class="border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-indigo-500 text-sm cursor-pointer">
+                    <option value="">All Roles</option>
+                    <option value="buyer" {% if request.GET.role == 'buyer' %}selected{% endif %}>Buyer</option>
+                    <option value="agent" {% if request.GET.role == 'agent' %}selected{% endif %}>Agent</option>
+                    <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>Admin</option>
+                </select>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 text-sm border-b border-gray-200">
+                            <th class="px-6 py-4 font-medium uppercase tracking-wider">User Info</th>
+                            <th class="px-6 py-4 font-medium uppercase tracking-wider">Role</th>
+                            <th class="px-6 py-4 font-medium uppercase tracking-wider">Joined Date</th>
+                            <th class="px-6 py-4 font-medium uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-4 font-medium uppercase tracking-wider text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        
+                        {% for user in users %}
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full border border-gray-200 shadow-sm overflow-hidden flex-shrink-0 bg-indigo-50 flex items-center justify-center font-bold text-indigo-600">
+                                    {% if user.profile_picture %}
+                                        <img src="{{ user.profile_picture.url }}" class="w-full h-full object-cover">
+                                    {% else %}
+                                        {{ user.username|first|upper }}
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-800 mb-0">{{ user.first_name|default:user.username }} {{ user.last_name }}</p>
+                                    <p class="text-xs text-gray-500 mb-0">{{ user.email }}</p>
+                                </div>
+                            </td>
+                            
+                            <td class="px-6 py-4">
+                                {% if user.role == 'admin' or user.is_superuser %}
+                                    <span class="bg-purple-100 text-purple-700 text-xs px-2.5 py-1 rounded-md font-bold uppercase tracking-wider border border-purple-200">Admin</span>
+                                {% elif user.role == 'agent' %}
+                                    <span class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-1 rounded-md font-bold uppercase tracking-wider border border-indigo-200">Agent</span>
+                                {% else %}
+                                    <span class="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-md font-bold uppercase tracking-wider border border-gray-200">Buyer</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="px-6 py-4 text-sm text-gray-600 font-medium">
+                                {{ user.date_joined|date:"M d, Y" }}
+                            </td>
+                            
+                            <td class="px-6 py-4">
+                                {% if user.is_active %}
+                                    <span class="text-green-600 text-sm font-bold flex items-center gap-1"><i class="fa-solid fa-circle text-[8px]"></i> Active</span>
+                                {% else %}
+                                    <span class="text-red-500 text-sm font-bold flex items-center gap-1"><i class="fa-solid fa-circle text-[8px]"></i> Suspended</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="px-6 py-4 text-right space-x-2">
+                                <a href="#" class="text-gray-400 hover:text-indigo-600 transition" title="View Profile"><i class="fa-solid fa-eye"></i></a>
+                                <a href="#" class="text-gray-400 hover:text-blue-600 transition" title="Edit User"><i class="fa-solid fa-pen-to-square"></i></a>
+                                {% if user.is_active %}
+                                    <a href="#" class="text-gray-400 hover:text-orange-500 transition" title="Suspend User"><i class="fa-solid fa-ban"></i></a>
+                                {% else %}
+                                    <a href="#" class="text-gray-400 hover:text-green-500 transition" title="Reactivate User"><i class="fa-solid fa-check-circle"></i></a>
+                                {% endif %}
+                                <a href="#" class="text-gray-400 hover:text-red-600 transition" title="Delete User"><i class="fa-solid fa-trash-can"></i></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                                <i class="fa-solid fa-users-slash text-3xl mb-3 text-gray-300 block"></i>
+                                No users found matching your criteria.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </section>
+{% endblock %}

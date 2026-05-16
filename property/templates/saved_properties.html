@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}My Saved Properties - PropNest{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 min-h-screen py-10">
+    <div class="max-w-7xl mx-auto px-4">
+        
+        <div class="mb-8 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-heart text-red-500 mr-2"></i> Saved Properties</h1>
+                <p class="text-gray-500 mt-1">Properties you have wishlisted for later.</p>
+            </div>
+            <div class="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+                <span class="font-bold text-indigo-600">{{ saved_items.count }}</span> Properties
+            </div>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="p-4 mb-6 rounded-lg text-sm font-medium {% if message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200{% endif %}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            
+            {% for item in saved_items %}
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group flex flex-col border border-gray-100 relative">
+              
+                <form method="POST" action="{% url 'save_property' item.property.id %}" class="absolute top-3 right-3 z-10 m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="bg-white/90 backdrop-blur-sm hover:bg-red-50 text-red-500 hover:text-red-600 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition" title="Remove from Saved">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                </form>
+
+                <a href="{% url 'property_detail' item.property.id %}" class="block relative h-52 overflow-hidden text-decoration-none">
+                    {% if item.property.images.first %}
+                        <img src="{{ item.property.images.first.image.url }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    {% else %}
+                        <div class="w-full h-full bg-gray-200 flex items-center justify-center"><i class="fa-solid fa-image text-4xl text-gray-400"></i></div>
+                    {% endif %}
+                
+                    <div class="absolute top-4 left-4 {% if item.property.listing_type == 'Rent' %}bg-green-500{% else %}bg-indigo-600{% endif %} text-white text-xs font-bold px-3 py-1 rounded shadow-sm">
+                        For {{ item.property.listing_type }}
+                    </div>
+                </a>
+              
+                <div class="p-5 flex-grow flex flex-col justify-between">
+                    <div>
+                        <p class="text-xs text-indigo-600 font-bold uppercase tracking-wider mb-1">{{ item.property.property_type.name }}</p>
+                        <a href="{% url 'property_detail' item.property.id %}" class="text-decoration-none">
+                            <h3 class="text-lg font-bold text-gray-800 mb-2 line-clamp-1 hover:text-indigo-600 transition-colors">{{ item.property.title }}</h3>
+                        </a>
+                        <p class="text-gray-500 text-sm mb-4"><i class="fa-solid fa-location-dot mr-2 text-gray-400"></i>{{ item.property.city }}</p>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <p class="text-xl font-black text-gray-900 mb-0">${{ item.property.price }}{% if item.property.listing_type == 'Rent' %}<span class="text-sm font-medium text-gray-500">/mo</span>{% endif %}</p>
+                            <span class="text-xs text-gray-400 font-medium">Saved {{ item.saved_at|date:"M d" }}</span>
+                        </div>
+                        
+                        <a href="{% url 'property_detail' item.property.id %}" class="block w-full text-center bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-bold py-2.5 rounded-lg transition text-sm text-decoration-none border border-indigo-100 hover:border-indigo-600">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            {% empty %}
+            <div class="col-span-1 md:col-span-2 xl:col-span-3 text-center py-20 bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-50 text-red-400 mb-4">
+                    <i class="fa-regular fa-heart text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">No Saved Properties</h3>
+                <p class="text-gray-500 max-w-md mx-auto mb-6">You haven't saved any properties yet. Browse our listings and click the heart icon to save your favorites here.</p>
+                <a href="{% url 'property_list' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl transition shadow-md text-decoration-none inline-block">
+                    Browse Properties
+                </a>
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

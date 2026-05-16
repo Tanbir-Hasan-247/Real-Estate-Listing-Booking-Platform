@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Home - PropNest{% endblock %}
+
+{% block content %}
+    <section class="relative h-[600px] flex items-center justify-center">
+      <!-- Background Image with Overlay -->
+      <div class="absolute inset-0 z-0">
+        <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80" alt="Hero Background" class="w-full h-full object-cover" />
+        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+      </div>
+
+      <!-- Hero Content -->
+      <div class="relative z-10 text-center px-4 w-full max-w-4xl">
+        <h1 class="text-4xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
+          Find Your Perfect Place to Call Home
+        </h1>
+        <p class="text-lg md:text-xl text-gray-200 mb-10">
+          Explore over 10,000+ properties for sale and rent across the country.
+        </p>
+
+        <!-- Advanced Search Box -->
+        <div class="bg-white p-4 rounded-xl shadow-2xl flex flex-col md:flex-row gap-4">
+          <div class="flex-1 flex items-center bg-gray-100 rounded-lg px-4 py-3">
+            <i class="fa-solid fa-location-dot text-brand mr-3"></i>
+            <input type="text" placeholder="City, Neighborhood, or Address" class="bg-transparent border-none outline-none w-full text-gray-700" />
+          </div>
+          
+          <div class="flex-1 flex items-center bg-gray-100 rounded-lg px-4 py-3 border-l md:border-l-0 border-gray-300">
+            <i class="fa-solid fa-house text-brand mr-3"></i>
+            <select class="bg-transparent border-none outline-none w-full text-gray-700 cursor-pointer">
+              <option value="">Property Type</option>
+              <option value="apartment">Apartment</option>
+              <option value="villa">Villa</option>
+              <option value="office">Office</option>
+            </select>
+          </div>
+
+          <button class="bg-brand hover:bg-brand-dark text-white font-bold py-3 px-8 rounded-lg transition">
+            Search
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- FEATURED PROPERTIES     -->
+    <!-- ======================= -->
+    <section class="py-16 px-4 max-w-7xl mx-auto">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold text-gray-800 mb-4">Featured Properties</h2>
+        <p class="text-gray-600 max-w-2xl mx-auto">Handpicked exclusive properties by our expert agents for you.</p>
+      </div>
+
+      <!-- Properties Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        
+        {% for property in properties %}
+        <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group">
+        
+        <div class="relative h-64 overflow-hidden">
+            {% if property.first_image %}
+                <img src="{{ property.first_image.image.url }}" alt="{{ property.title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+            {% else %}
+                <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Placeholder" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+            {% endif %}
+
+            <div class="absolute top-4 left-4 {% if property.listing_type == 'rent' %}bg-green-500{% else %}bg-indigo-600{% endif %} text-white text-xs font-bold px-3 py-1 rounded">
+                {{ property.get_listing_type_display }}
+            </div>
+
+            <div class="absolute bottom-4 right-4 bg-gray-900 bg-opacity-70 text-white text-sm font-bold px-3 py-1 rounded">
+                ${{ property.price }}{% if property.listing_type == 'rent' %} / mo{% endif %}
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <p class="text-sm text-indigo-600 font-semibold mb-1">{{ property.property_type.get_name_display }}</p>
+            
+            <h3 class="text-xl font-bold text-gray-800 mb-2 truncate">{{ property.title }}</h3>
+            
+            <p class="text-gray-600 text-sm mb-4"><i class="fa-solid fa-location-dot mr-2"></i>{{ property.location }}, {{ property.city }}</p>
+            
+            <hr class="border-gray-200 mb-4">
+            
+            <div class="flex justify-between text-gray-600 text-sm">
+            
+            {% if property.bedrooms %}
+            <span><i class="fa-solid fa-bed mr-2 text-gray-400"></i>{{ property.bedrooms }} Beds</span>
+            {% endif %}
+            
+            {% if property.bathrooms %}
+            <span><i class="fa-solid fa-bath mr-2 text-gray-400"></i>{{ property.bathrooms }} Baths</span>
+            {% endif %}
+            
+            <span><i class="fa-solid fa-vector-square mr-2 text-gray-400"></i>{{ property.area_sqft }} sqft</span>
+            
+            </div>
+        </div>
+        
+        </div>
+        {% endfor %}
+
+      </div>
+      
+      <!-- View All Button -->
+      <div class="text-center mt-10">
+        <a href="#" class="inline-block bg-white text-brand border border-brand font-bold py-3 px-8 rounded-lg hover:bg-brand hover:text-white transition shadow-sm text-decoration-none">
+          Browse All Properties
+        </a>
+      </div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- WHY CHOOSE US SECTION   -->
+    <!-- ======================= -->
+    <section class="bg-gray-100 py-16">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold text-gray-800 mb-4">Why Choose PropNest?</h2>
+          <p class="text-gray-600">We provide a seamless and secure experience for buyers, renters, and agents.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+          <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+            <div class="w-16 h-16 bg-indigo-100 text-brand rounded-full flex items-center justify-center mx-auto text-2xl mb-6">
+              <i class="fa-solid fa-magnifying-glass-location"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-3">Easy Filtering</h3>
+            <p class="text-gray-600">Find exactly what you're looking for with our advanced search and custom filters.</p>
+          </div>
+          
+          <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+            <div class="w-16 h-16 bg-indigo-100 text-brand rounded-full flex items-center justify-center mx-auto text-2xl mb-6">
+              <i class="fa-solid fa-calendar-check"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-3">Instant Tour Booking</h3>
+            <p class="text-gray-600">Schedule property tours instantly from your dashboard and get agent confirmations.</p>
+          </div>
+
+          <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+            <div class="w-16 h-16 bg-indigo-100 text-brand rounded-full flex items-center justify-center mx-auto text-2xl mb-6">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-3">Trusted Agents</h3>
+            <p class="text-gray-600">All properties are listed by verified agents, ensuring a safe and scam-free process.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- CALL TO ACTION (CTA)    -->
+    <!-- ======================= -->
+    <section class="bg-brand py-16">
+      <div class="max-w-4xl mx-auto px-4 text-center">
+        <h2 class="text-3xl font-bold text-white mb-6">Are You a Real Estate Agent?</h2>
+        <p class="text-indigo-100 mb-8 text-lg">Join thousands of agents who are successfully growing their business using PropNest. List your properties and reach millions of buyers today.</p>
+        <button class="bg-white text-brand font-bold py-3 px-8 rounded-lg hover:bg-gray-100 transition shadow-lg">
+          Become an Agent
+        </button>
+      </div>
+    </section>
+{% endblock %}
