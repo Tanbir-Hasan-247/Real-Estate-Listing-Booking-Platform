@@ -70,6 +70,7 @@ def AgentDashboardView(request):
             .select_related('property_type', 'agent')
             .prefetch_related('images')
             .filter(agent=request.user)
+            .order_by('-created_at')
         )
     
     tour_bookings = TourBooking.objects.select_related('property','buyer').filter(property__agent=request.user).order_by('-created_at')
@@ -99,6 +100,7 @@ def AgentPropertyListView(request):
             .select_related('property_type', 'agent')
             .prefetch_related('images')
             .filter(agent=request.user)
+            .order_by('-created_at')
         )
     
     search_query = request.GET.get('search', '')
@@ -187,13 +189,14 @@ def UpdateTourStatusView(request, booking_id, new_status):
             
     return redirect('agent_tour_requests')
 
-def BaseView(request):
-    tour_requests = TourBooking.objects.select_related('property', 'buyer').prefetch_related('property__images').filter(property__agent=request.user)
-    tour_requests_count = tour_requests.filter(status='Pending').count()
-    context = {
-        'tour_requests_count': tour_requests_count,
-    }
-    return render(request, 'agent/agent_base.html', context)
+# def BaseView(request):
+#     tour_requests = TourBooking.objects.select_related('property', 'buyer').prefetch_related('property__images').filter(property__agent=request.user)
+#     tour_requests_count = tour_requests.filter(status='Pending').count()
+#     print("Tour requests count:", tour_requests_count)
+#     context = {
+#         'tour_requests_count': tour_requests_count,
+#     }
+#     return render(request, 'agent/agent_base.html', context)
 
 def AdminDashboardView(request):
     if request.user.role != 'admin' and not request.user.is_superuser:
