@@ -1,5 +1,6 @@
 from django.contrib import messages
-
+from django.views.generic import DetailView, ListView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from Real_Estate.views import User
 from property.models import Property, PropertyImage, PropertyType, SavedProperty, TourBooking
@@ -64,36 +65,78 @@ def PropertyDeleteView(request, pk):
     property.delete()
     return redirect('agent_dashboard')
 
-def AgentDashboardView(request):
-    properties = (
+# def AgentDashboardView(request):
+#     properties = (
+#             Property.objects
+#             .select_related('property_type', 'agent')
+#             .prefetch_related('images')
+#             .filter(agent=request.user)
+#             .order_by('-created_at')
+#         )
+    
+#     tour_bookings = TourBooking.objects.select_related('property','buyer').filter(property__agent=request.user).order_by('-created_at')
+#     tour_bookings_count = tour_bookings.filter(status='Pending').count()
+    
+#     propertie_count = properties.count()
+#     active_count = properties.filter(status='available').count()
+    
+#     filter_type = request.GET.get('filter', 'all')
+#     if filter_type == 'available':
+#         properties = properties.filter(status='available')
+        
+#     for property in properties:
+#         property.first_image = property.images.all()[0] if property.images.all() else None
+#     context = {
+#         'properties': properties,
+#         'property_count': propertie_count,
+#         'active_count': active_count,
+#         'tour_bookings': tour_bookings,
+#         'tour_bookings_count': tour_bookings_count,
+#     }
+#     return render(request, 'agent/dashboard.html', context)
+
+class AgentDashboardView(UserPassesTestMixin, LoginRequiredMixin, ListView):
+    model = Property
+    template_name = 'agent/dashboard.html'
+    context_object_name = 'properties'
+    login_url = 'login'
+    
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.role == 'agent'
+
+    def get_queryset(self):
+        queryset = (
             Property.objects
             .select_related('property_type', 'agent')
             .prefetch_related('images')
-            .filter(agent=request.user)
+            .filter(agent=self.request.user)
             .order_by('-created_at')
         )
-    
-    tour_bookings = TourBooking.objects.select_related('property','buyer').filter(property__agent=request.user).order_by('-created_at')
-    tour_bookings_count = tour_bookings.filter(status='Pending').count()
-    
-    propertie_count = properties.count()
-    active_count = properties.filter(status='available').count()
-    
-    filter_type = request.GET.get('filter', 'all')
-    if filter_type == 'available':
-        properties = properties.filter(status='available')
         
-    for property in properties:
-        property.first_image = property.images.all()[0] if property.images.all() else None
-    context = {
-        'properties': properties,
-        'property_count': propertie_count,
-        'active_count': active_count,
-        'tour_bookings': tour_bookings,
-        'tour_bookings_count': tour_bookings_count,
-    }
-    return render(request, 'agent/dashboard.html', context)
-
+        filter_type = self.request.GET.get('filter', 'all')
+        if filter_type == 'available':
+            queryset = queryset.filter(status='available')
+        
+        for property in queryset:
+            property.first_image = property.images.all()[0] if property.images.all() else None
+            
+        return queryset
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        tour_bookings = TourBooking.objects.select_related('property','buyer').filter(property__agent=self.request.user).order_by('-created_at')
+        tour_bookings_count = tour_bookings.filter(status='Pending').count()
+        
+        propertie_count = self.get_queryset().count()
+        active_count = self.get_queryset().filter(status='available').count()
+        
+        context['property_count'] = propertie_count
+        context['active_count'] = active_count
+        context['tour_bookings'] = tour_bookings
+        context['tour_bookings_count'] = tour_bookings_count
+        
+        return context
+    
 def AgentPropertyListView(request):
     properties = (
             Property.objects
@@ -338,40 +381,113 @@ def AdminTourRequestsView(request):
     return render(request, 'admin/admin_tour_requests.html', context)
 
 
-def PropertyDetailView(request, id):
-    property_obj = get_object_or_404(Property.objects.prefetch_related('images'), id=id)
+# def PropertyDetailView(request, id):
+#     property_obj = get_object_or_404(Property.objects.prefetch_related('images'), id=id)
     
-    is_saved = False
-    if request.user.is_authenticated:
-        is_saved = SavedProperty.objects.filter(user=request.user, property=property_obj).exists()
+#     is_saved = False
+#     if request.user.is_authenticated:
+#         is_saved = SavedProperty.objects.filter(user=request.user, property=property_obj).exists()
 
-    if request.method == 'POST':
-        if not request.user.is_authenticated:
-            messages.error(request, "You need to log in to book a tour.")
-            return redirect('login')
+#     if request.method == 'POST':
+#         if not request.user.is_authenticated:
+#             messages.error(request, "You need to log in to book a tour.")
+#             return redirect('login')
             
-        if request.user == property_obj.agent:
-            messages.error(request, "You cannot book a tour for your own property!")
-            return redirect('property_detail', id=id)
+#         if request.user == property_obj.agent:
+#             messages.error(request, "You cannot book a tour for your own property!")
+#             return redirect('property_detail', id=id)
+
+#         form = TourBookingForm(request.POST)
+#         if form.is_valid():
+#             booking = form.save(commit=False)
+#             booking.property = property_obj
+#             booking.buyer = request.user
+#             booking.save()
+#             messages.success(request, "Tour requested successfully! The agent will contact you soon.")
+#             return redirect('property_detail', id=id)
+#     else:
+#         form = TourBookingForm()
+
+#     context = {
+#         'property': property_obj,
+#         'form': form,
+#         'is_saved': is_saved,
+#     }
+#     return render(request, 'property_detail.html', context)
+
+
+class PropertyDetailView(DetailView):
+    model = Property
+    template_name = 'property_detail.html'
+    context_object_name = 'property'
+    pk_url_kwarg = 'id'
+
+    def get_queryset(self):
+        return (
+            Property.objects
+            .select_related('agent', 'property_type')
+            .prefetch_related('images')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        property = self.get_object()
+
+        is_saved = False
+
+        if self.request.user.is_authenticated:
+            is_saved = SavedProperty.objects.filter(
+                user=self.request.user,
+                property=property
+            ).exists()
+
+        context['is_saved'] = is_saved
+        context['form'] = TourBookingForm()
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+
+        if not request.user.is_authenticated:
+            messages.error(
+                request,
+                "You need to log in to book a tour."
+            )
+            return redirect('login')
+
+        if request.user == self.object.agent:
+            messages.error(
+                request,
+                "You cannot book a tour for your own property!"
+            )
+            return redirect('property_detail', id=self.object.id)
 
         form = TourBookingForm(request.POST)
+
         if form.is_valid():
             booking = form.save(commit=False)
-            booking.property = property_obj
-            booking.buyer = request.user
-            booking.save()
-            messages.success(request, "Tour requested successfully! The agent will contact you soon.")
-            return redirect('property_detail', id=id)
-    else:
-        # GET রিকোয়েস্টের জন্য (এখানে else দেওয়াটা জরুরি)
-        form = TourBookingForm()
 
-    context = {
-        'property': property_obj,
-        'form': form,
-        'is_saved': is_saved,
-    }
-    return render(request, 'property_detail.html', context)
+            booking.property = self.object
+            booking.buyer = request.user
+
+            booking.save()
+
+            messages.success(
+                request,
+                "Tour requested successfully! The agent will contact you soon."
+            )
+
+            return redirect(
+                'property_detail',
+                id=self.object.id
+            )
+
+        context = self.get_context_data()
+        context['form'] = form
+
+        return self.render_to_response(context)
 
 
 def ToggleSavePropertyView(request, id):

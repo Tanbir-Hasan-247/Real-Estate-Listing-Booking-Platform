@@ -25,9 +25,12 @@ from Real_Estate import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", views.HomeView, name="home"),
-    path("properties/", views.PropertyListView, name="property_list"),
-    path("agents/", views.AgentListView, name="agent_list"),
+    # path("", views.HomeView, name="home"),
+    path("", views.HomeView.as_view(), name="home"),
+    # path("properties/", views.PropertyListView, name="property_list"),
+    path("properties/", views.PropertyListView.as_view(), name="property_list"),
+    # path("agents/", views.AgentListView, name="agent_list"),
+    path("agents/", views.AgentListView.as_view(), name="agent_list"),
     path("", include("users.urls")),
     path("", include("property.urls")),
 ] + debug_toolbar_urls()

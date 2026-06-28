@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from cloudinary.models import CloudinaryField
 
 # Create your models here.
 User = get_user_model()
@@ -59,7 +60,7 @@ class Property(models.Model):
     
 class PropertyImage(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='property_images/')
+    image = CloudinaryField('Image', folder='property_images')
     
     def __str__(self):
         return f"Image for {self.property.title}"
