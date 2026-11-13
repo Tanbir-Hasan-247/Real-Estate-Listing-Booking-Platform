@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Account Activation — PropNest Real Estate{% endblock %}
+
+{% block content %}
+<div class="pn-page">
+  <div class="pn-container">
+    <div class="pn-auth-wrap">
+      <section class="pn-card pn-stack-md" style="padding:clamp(1.75rem, 4vw, 3rem);text-align:center;">
+        <p class="pn-kicker">Verification</p>
+        {% if activated %}
+          <h1 class="pn-h1" style="margin:0;font-size:2.4rem;">Account Activated</h1>
+          <p class="pn-lead" style="margin-inline:auto;">Your email has been verified. You may now access your PropNest account, saved residences, and tour requests.</p>
+          <div class="pn-row" style="justify-content:center;">
+            <a href="{% url 'login' %}" class="pn-btn pn-btn-primary">Sign In Now →</a>
+          </div>
+        {% else %}
+          <h1 class="pn-h1" style="margin:0;font-size:2.4rem;">Activation Unsuccessful</h1>
+          <p class="pn-muted" style="margin:0;">{{ reason|default:"The activation link is invalid or has already been used." }}</p>
+          <div class="pn-row" style="justify-content:center;margin-top:0.5rem;">
+            <a href="{% url 'resend_activation' %}" class="pn-btn pn-btn-primary">Resend Activation Link</a>
+            <a href="{% url 'login' %}" class="pn-btn">Back to Sign In</a>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

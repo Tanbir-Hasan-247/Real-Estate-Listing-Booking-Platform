@@ -1,27 +1,138 @@
 {% extends "base.html" %}
 
-{% block title %}User Registration{% endblock %}
+{% block title %}Create Account — PropNest Real Estate{% endblock %}
 
 {% block content %}
-        <div class="flex-grow flex items-center justify-center py-10">
-            <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md border">
-                <h2 class="text-2xl text-center font-bold text-gray-800 mb-4">Register</h2>
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="mb-4">
-                        {{ form.as_p }}
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition">
-                            Register
-                        </button>
-                    </div>
-                    <div class="mt-2 text-center">
-                        <span class="text-sm text-gray-600">
-                            Already have an account? <a href="{% url 'login' %}" class="text-indigo-600 hover:underline">Log in</a>
-                        </span>
-                    </div>
-                </form>
+<div class="pn-page">
+  <div class="pn-container">
+    <div class="pn-auth-wide pn-stack-md">
+      <div class="pn-stack-xs" style="text-align:center;">
+        <p class="pn-kicker">Membership</p>
+        <h1 class="pn-h1" style="margin:0;font-size:clamp(2.2rem, 4vw, 3.3rem);">Join PropNest Studio</h1>
+        <p class="pn-muted">Register as a Buyer to book tours &amp; curate your wishlist, or apply as a Property Advisor.</p>
+      </div>
+
+      <section class="pn-card" style="padding:clamp(1.6rem, 4vw, 2.75rem);">
+        <form method="POST" action="{% url 'register' %}" enctype="multipart/form-data" class="pn-validated-form pn-native-cursor" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="pn-alert pn-alert-error" style="margin-bottom:1.25rem;">
+              {{ form.non_field_errors }}
             </div>
-        </div>
+          {% endif %}
+
+          <div class="pn-field">
+            <label for="{{ form.account_role.id_for_label }}" class="pn-label">I am registering as</label>
+            <span class="pn-hint">Select Resident / Buyer to explore &amp; tour homes, or Advisor / Agent to publish listings.</span>
+            {{ form.account_role }}
+            {% if form.account_role.errors %}<ul class="pn-server-errors">{% for e in form.account_role.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <div class="pn-grid-2">
+            <div class="pn-field">
+              <label for="{{ form.first_name.id_for_label }}" class="pn-label">First Name</label>
+              {{ form.first_name }}
+              {% if form.first_name.errors %}<ul class="pn-server-errors">{% for e in form.first_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+
+            <div class="pn-field">
+              <label for="{{ form.last_name.id_for_label }}" class="pn-label">Last Name</label>
+              {{ form.last_name }}
+              {% if form.last_name.errors %}<ul class="pn-server-errors">{% for e in form.last_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+          </div>
+
+          <div class="pn-grid-2">
+            <div class="pn-field">
+              <label for="{{ form.username.id_for_label }}" class="pn-label">Username *</label>
+              {{ form.username }}
+              <span id="err-reg-user" class="pn-error-msg">Username is required (letters, numbers, @/./+/-/_ only).</span>
+              {% if form.username.errors %}<ul class="pn-server-errors">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+
+            <div class="pn-field">
+              <label for="{{ form.email.id_for_label }}" class="pn-label">Email Address *</label>
+              {{ form.email }}
+              <span id="err-reg-email" class="pn-error-msg">Enter a valid email address for activation.</span>
+              {% if form.email.errors %}<ul class="pn-server-errors">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+          </div>
+
+          <div class="pn-grid-2">
+            <div class="pn-field">
+              <label for="{{ form.phone.id_for_label }}" class="pn-label">Phone Number</label>
+              {{ form.phone }}
+              {% if form.phone.errors %}<ul class="pn-server-errors">{% for e in form.phone.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+
+            <div class="pn-field">
+              <label for="{{ form.profile.id_for_label }}" class="pn-label">Profile Portrait (Optional)</label>
+              {{ form.profile }}
+              {% if form.profile.errors %}<ul class="pn-server-errors">{% for e in form.profile.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+          </div>
+
+          <div class="pn-grid-2">
+            <div class="pn-field">
+              <label for="{{ form.password.id_for_label }}" class="pn-label">Password *</label>
+              <div class="pn-pw-wrap">
+                {{ form.password }}
+                <button type="button" class="pn-pw-btn" data-password-toggle="{{ form.password.id_for_label }}" aria-pressed="false" aria-label="Show password">
+                  <span data-pw-label>Show</span>
+                </button>
+              </div>
+              <span id="err-reg-pw1" class="pn-error-msg">Please enter a strong password (minimum 8 characters).</span>
+              {% if form.password.errors %}<ul class="pn-server-errors">{% for e in form.password.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+
+            <div class="pn-field">
+              <label for="{{ form.confirm_password.id_for_label }}" class="pn-label">Confirm Password *</label>
+              <div class="pn-pw-wrap">
+                {{ form.confirm_password }}
+                <button type="button" class="pn-pw-btn" data-password-toggle="{{ form.confirm_password.id_for_label }}" aria-pressed="false" aria-label="Show confirm password">
+                  <span data-pw-label>Show</span>
+                </button>
+              </div>
+              <span id="err-reg-pw2" class="pn-error-msg">Please confirm your password.</span>
+              {% if form.confirm_password.errors %}<ul class="pn-server-errors">{% for e in form.confirm_password.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+          </div>
+
+          <button type="submit" class="pn-btn pn-btn-primary w-full">Create Account →</button>
+        </form>
+
+        <hr class="pn-divider">
+        <p class="pn-muted" style="text-align:center;margin:0;">Already registered? <a href="{% url 'login' %}" class="text-[var(--g2-gold)] no-underline">Sign in to PropNest →</a></p>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (() => {
+    const roleSel = document.getElementById('{{ form.account_role.id_for_label }}');
+    if (roleSel) roleSel.classList.add('pn-select');
+    const fileIn = document.getElementById('{{ form.profile.id_for_label }}');
+    if (fileIn) fileIn.classList.add('pn-input');
+    [
+      '{{ form.first_name.id_for_label }}',
+      '{{ form.last_name.id_for_label }}',
+      '{{ form.username.id_for_label }}',
+      '{{ form.email.id_for_label }}',
+      '{{ form.phone.id_for_label }}'
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('pn-input');
+    });
+    const pw1 = document.getElementById('{{ form.password.id_for_label }}');
+    const pw2 = document.getElementById('{{ form.confirm_password.id_for_label }}');
+    if (pw1) { pw1.setAttribute('minlength', '8'); pw1.setAttribute('data-error', 'err-reg-pw1'); }
+    if (pw2) { pw2.setAttribute('minlength', '8'); pw2.setAttribute('data-error', 'err-reg-pw2'); }
+    document.getElementById('{{ form.username.id_for_label }}')?.setAttribute('data-error', 'err-reg-user');
+    document.getElementById('{{ form.email.id_for_label }}')?.setAttribute('data-error', 'err-reg-email');
+  })();
+</script>
 {% endblock %}

@@ -1,115 +1,80 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}{{ agent.first_name|default:agent.username }}'s Profile - PropNest{% endblock %}
+{% block title %}{{ agent.get_full_name|default:agent.username }} — Advisor Portfolio — PropNest{% endblock %}
 
 {% block content %}
-<div class="bg-gray-50 min-h-screen pb-16">
-    
-    <div class="bg-indigo-900 text-white pt-16 pb-24">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center md:items-start gap-8">
-            
-            <div class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-indigo-400 overflow-hidden shadow-xl flex-shrink-0 bg-white flex justify-center items-center">
-                {% if agent.profile_picture %}
-                    <img src="{{ agent.profile_picture.url }}" alt="{{ agent.username }}" class="w-full h-full object-cover">
-                {% else %}
-                    <span class="text-5xl text-indigo-600 font-bold">
-                        {% if agent.first_name %}
-                            {{ agent.first_name|first|upper }}{{ agent.last_name|first|upper }}
-                        {% else %}
-                            {{ agent.username|first|upper }}
-                        {% endif %}
-                    </span>
-                {% endif %}
+<div class="pn-page">
+  <div class="pn-container pn-stack-lg">
+    <nav aria-label="Breadcrumb" class="pn-row" style="font-size:0.82rem;color:var(--g2-sand-dim);">
+      <a href="{% url 'home' %}" class="no-underline text-[var(--g2-sand-dim)] hover:text-[var(--g2-gold)]">Home</a>
+      <span>/</span>
+      <a href="{% url 'agent_list' %}" class="no-underline text-[var(--g2-sand-dim)] hover:text-[var(--g2-gold)]">Advisors</a>
+      <span>/</span>
+      <span style="color:var(--g2-sand);">{{ agent.get_full_name|default:agent.username }}</span>
+    </nav>
+
+    <!-- Advisor Profile Banner -->
+    <section class="pn-card" style="padding:clamp(1.75rem, 4vw, 3rem);">
+      <div class="pn-row-between" style="align-items:flex-start;gap:2rem;">
+        <div class="pn-row" style="gap:1.5rem;align-items:flex-start;">
+          {% if agent.profile %}
+            <img src="{{ agent.profile.url }}" alt="{{ agent.get_full_name|default:agent.username }}" class="pn-avatar-lg">
+          {% else %}
+            <span class="pn-avatar-lg pn-avatar-initials" style="font-size:1.75rem;">{{ agent.username|slice:":2"|upper }}</span>
+          {% endif %}
+          <div class="pn-stack-sm">
+            <span class="pn-badge pn-badge-ember self-start">Licensed PropNest Advisor</span>
+            <h1 class="pn-h1" style="margin:0;">{{ agent.get_full_name|default:agent.username }}</h1>
+            {% if agent.bio %}
+              <p class="pn-lead" style="margin:0;">{{ agent.bio }}</p>
+            {% else %}
+              <p class="pn-lead" style="margin:0;">Dedicated residential advisory specialist representing curated urban residences and luxury developments.</p>
+            {% endif %}
+            <div class="pn-row" style="margin-top:0.4rem;">
+              {% if agent.phone %}<a href="tel:{{ agent.phone }}" class="pn-btn pn-btn-sm">{{ agent.phone }}</a>{% endif %}
+              <a href="mailto:{{ agent.email }}" class="pn-btn pn-btn-sm">{{ agent.email }}</a>
+              <a href="{% url 'contact' %}" class="pn-btn pn-btn-primary pn-btn-sm">Request Private Consultation</a>
             </div>
-            
-            <div class="text-center md:text-left flex-grow">
-                <h1 class="text-3xl md:text-4xl font-bold mb-2">
-                    {% if agent.first_name %}{{ agent.first_name }} {{ agent.last_name }}{% else %}{{ agent.username }}{% endif %}
-                </h1>
-                <p class="text-indigo-300 font-medium mb-4"><i class="fa-solid fa-certificate text-indigo-400 mr-2"></i> Certified Real Estate Agent</p>
-                
-                <p class="text-gray-200 max-w-3xl mb-6 leading-relaxed text-sm md:text-base">
-                    {{ agent.bio|default:"Professional real estate agent dedicated to helping clients find their dream properties. Feel free to contact me for any property-related inquiries." }}
-                </p>
-                
-                <div class="flex flex-wrap justify-center md:justify-start gap-3">
-                    {% if agent.phone_number %}
-                    <a href="tel:{{ agent.phone_number }}" class="bg-white/10 hover:bg-white/20 border border-indigo-400 text-white px-5 py-2.5 rounded-lg transition text-sm font-bold text-decoration-none shadow-sm">
-                        <i class="fa-solid fa-phone mr-2"></i> {{ agent.phone_number }}
-                    </a>
-                    {% endif %}
-                    <a href="mailto:{{ agent.email }}" class="bg-indigo-500 hover:bg-indigo-600 border border-indigo-500 text-white px-5 py-2.5 rounded-lg transition text-sm font-bold text-decoration-none shadow-md">
-                        <i class="fa-solid fa-envelope mr-2"></i> Message Agent
-                    </a>
-                </div>
-            </div>
+          </div>
         </div>
-    </div>
 
-    <div class="max-w-7xl mx-auto px-4 -mt-10">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-10">
-            
-            <div class="flex justify-between items-end border-b border-gray-100 pb-4 mb-8">
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-800">Active Listings</h2>
-                    <p class="text-gray-500 text-sm mb-0">Properties currently managed by {{ agent.first_name|default:agent.username }}</p>
-                </div>
-                <div class="hidden sm:block">
-                    <span class="bg-indigo-50 text-indigo-700 font-bold px-4 py-2 rounded-lg text-sm border border-indigo-100">{{ properties.count }} Properties</span>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                
-                {% for property in properties %}
-                <a href="#" class="block bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group border border-gray-100 text-decoration-none flex flex-col h-full">
-                  
-                  <div class="relative h-56 overflow-hidden bg-gray-200">
-                    {% if property.first_image %}
-                        <img src="{{ property.first_image.image.url }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    {% else %}
-                        <div class="flex items-center justify-center h-full text-gray-400"><i class="fa-solid fa-image text-4xl"></i></div>
-                    {% endif %}
-                
-                    <div class="absolute top-4 left-4 {% if property.listing_type == 'Rent' %}bg-green-500{% else %}bg-indigo-600{% endif %} text-white text-xs font-bold px-3 py-1 rounded shadow-md uppercase tracking-wider">
-                        For {{ property.listing_type }}
-                    </div>
-                
-                    <div class="absolute bottom-4 right-4 bg-gray-900/80 backdrop-blur-sm text-white text-sm font-bold px-3 py-1.5 rounded shadow-md">
-                        ${{ property.price }}{% if property.listing_type == 'Rent' %} / mo{% endif %}
-                    </div>
-                  </div>
-                  
-                  <div class="p-5 flex-grow flex flex-col justify-between">
-                    <div>
-                        <p class="text-xs text-indigo-600 font-bold mb-1 uppercase tracking-wider">{{ property.property_type.name }}</p>
-                        <h3 class="text-lg font-bold text-gray-800 mb-2 line-clamp-1 group-hover:text-indigo-600 transition">{{ property.title }}</h3>
-                        <p class="text-gray-500 text-sm mb-4"><i class="fa-solid fa-location-dot mr-1 text-gray-400"></i> {{ property.city }}</p>
-                    </div>
-                    
-                    <div class="border-t border-gray-100 pt-3 mt-auto">
-                        <div class="flex justify-between text-gray-500 text-xs font-medium">
-                          {% if property.bedrooms %}<span><i class="fa-solid fa-bed mr-1 text-gray-400"></i>{{ property.bedrooms }} Beds</span>{% endif %}
-                          {% if property.bathrooms %}<span><i class="fa-solid fa-bath mr-1 text-gray-400"></i>{{ property.bathrooms }} Baths</span>{% endif %}
-                          <span><i class="fa-solid fa-vector-square mr-1 text-gray-400"></i>{{ property.area_sqft }} sqft</span>
-                        </div>
-                    </div>
-                  </div>
-                </a>
-                
-                {% empty %}
-                <div class="col-span-1 md:col-span-2 xl:col-span-3 text-center py-16">
-                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fa-solid fa-house-chimney-blank text-3xl text-gray-400"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">No Active Listings</h3>
-                    <p class="text-gray-500">This agent currently doesn't have any properties available for sale or rent.</p>
-                </div>
-                {% endfor %}
-
-            </div>
-            
+        <div class="pn-grid-2" style="min-width:260px;">
+          <div class="pn-kpi-card">
+            <span class="pn-kicker">Portfolio</span>
+            <span class="pn-kpi-val">{{ properties.count }}</span>
+            <span class="pn-muted" style="font-size:0.78rem;">Listed Properties</span>
+          </div>
+          <div class="pn-kpi-card">
+            <span class="pn-kicker">Track Record</span>
+            <span class="pn-kpi-val">{{ completed_deals }}</span>
+            <span class="pn-muted" style="font-size:0.78rem;">Closed Deals</span>
+          </div>
         </div>
-    </div>
+      </div>
+    </section>
+
+    <!-- Advisor Listings -->
+    <section class="pn-stack-md">
+      <div>
+        <p class="pn-kicker">Active &amp; Past Mandate</p>
+        <h2 class="pn-h2" style="margin:0.35rem 0 0;">Properties Represented by {{ agent.first_name|default:agent.username }}</h2>
+      </div>
+
+      {% if properties %}
+        <div class="pn-grid-3">
+          {% for prop in properties %}
+            {% include "includes/property_card.html" with prop=prop %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="pn-empty-state pn-stack-sm">
+          <h3 class="pn-h3">No active listings at the moment</h3>
+          <p class="pn-muted">This advisor currently handles confidential off-market mandates. Send a direct inquiry to learn more.</p>
+          <a href="{% url 'contact' %}" class="pn-btn pn-btn-primary">Contact Concierge</a>
+        </div>
+      {% endif %}
+    </section>
+  </div>
 </div>
 {% endblock %}

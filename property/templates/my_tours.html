@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Private Tour Schedule — PropNest Real Estate{% endblock %}
+
+{% block content %}
+<div class="pn-page">
+  <div class="pn-container pn-stack-lg">
+    <div class="pn-row-between" style="align-items:flex-end;">
+      <div>
+        <p class="pn-kicker">Buyer Concierge • {{ bookings|length }} Requests</p>
+        <h1 class="pn-h1" style="margin:0.45rem 0 0;">My Scheduled Tours</h1>
+      </div>
+      <a href="{% url 'property_list' %}" class="pn-btn pn-btn-primary pn-btn-sm">Schedule Another Viewing →</a>
+    </div>
+
+    {% if bookings %}
+      <div class="pn-table-wrap pn-native-cursor">
+        <table class="pn-table">
+          <thead>
+            <tr>
+              <th>Residence</th>
+              <th>Preferred Date &amp; Time</th>
+              <th>Assigned Advisor</th>
+              <th>Status</th>
+              <th>Advisor Response</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for booking in bookings %}
+              <tr>
+                <td data-label="Residence">
+                  <div class="pn-stack-xs">
+                    <a href="{% url 'property_detail' booking.property.id %}" class="no-underline text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" style="font-weight:600;">
+                      {{ booking.property.title }}
+                    </a>
+                    <span class="pn-muted" style="font-size:0.78rem;">{{ booking.property.city }} • ${{ booking.property.price|floatformat:0 }}</span>
+                  </div>
+                </td>
+                <td data-label="Date &amp; Time">
+                  <span style="font-weight:600;">{{ booking.scheduled_date|date:"M d, Y" }}</span>
+                  <div class="pn-muted" style="font-size:0.8rem;">{{ booking.scheduled_time|time:"h:i A" }}</div>
+                </td>
+                <td data-label="Advisor">
+                  <a href="{% url 'properties_by_agent' booking.property.agent.id %}" class="no-underline text-[var(--g2-sand)] hover:text-[var(--g2-gold)]">
+                    {{ booking.property.agent.get_full_name|default:booking.property.agent.username }}
+                  </a>
+                </td>
+                <td data-label="Status">
+                  <span class="pn-badge {% if booking.status == 'Confirmed' %}pn-badge-confirmed{% elif booking.status == 'Completed' %}pn-badge-completed{% elif booking.status == 'Cancelled' %}pn-badge-cancelled{% else %}pn-badge-pending{% endif %}">
+                    {{ booking.status }}
+                  </span>
+                </td>
+                <td data-label="Advisor Note">
+                  <span class="pn-muted" style="font-size:0.84rem;">{{ booking.agent_message|default:booking.message|default:"Awaiting advisor confirmation."|truncatewords:16 }}</span>
+                </td>
+                <td data-label="Actions">
+                  <div class="pn-row" style="gap:0.5rem;">
+                    <a href="{% url 'property_detail' booking.property.id %}" class="pn-btn pn-btn-sm">View</a>
+                    {% if booking.status == 'Pending' or booking.status == 'Confirmed' %}
+                      <button type="button"
+                              class="pn-btn pn-btn-danger pn-btn-sm"
+                              data-confirm-action="{% url 'cancel_my_tour' booking.id %}"
+                              data-confirm-title="Cancel Scheduled Viewing"
+                              data-confirm-body="Are you sure you want to cancel your tour for '{{ booking.property.title }}' on {{ booking.scheduled_date|date:'M d, Y' }}?"
+                              data-confirm-label="Cancel Tour">
+                        Cancel
+                      </button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="pn-empty-state pn-stack-md" style="align-items:center;">
+        <p class="pn-kicker">No Scheduled Viewings</p>
+        <h2 class="pn-h2" style="margin:0;">You have no upcoming property tours.</h2>
+        <p class="pn-muted" style="margin:0;max-width:46ch;">Select any residence in our portfolio to book a personalized walk-through with the assigned advisor.</p>
+        <a href="{% url 'property_list' %}" class="pn-btn pn-btn-primary">Find a Residence →</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

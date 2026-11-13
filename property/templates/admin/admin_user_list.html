@@ -1,120 +1,157 @@
 {% extends "admin/admin_base.html" %}
 
-{% block title %}User Management - Admin Panel{% endblock %}
+{% block title %}User Directory — Admin Console — PropNest{% endblock %}
 
 {% block admin_content %}
-    <div class="bg-indigo-900 text-white py-8 px-6 lg:px-10">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-                <h1 class="text-2xl md:text-3xl font-bold mb-2">User Management</h1>
-                <p class="text-indigo-200 mb-0">View, edit, or manage all registered users on the platform.</p>
-            </div>
-            <div class="flex-shrink-0">
-                <a href="#" class="bg-white text-indigo-900 font-bold py-2 px-6 rounded-md hover:bg-gray-100 transition shadow-md inline-flex items-center text-decoration-none">
-                    <i class="fa-solid fa-user-plus mr-2"></i> Add New User
-                </a>
-            </div>
-        </div>
+<div class="pn-row-between" style="align-items:flex-end;">
+  <div>
+    <p class="pn-kicker">Access Control</p>
+    <h1 class="pn-h1" style="margin:0.35rem 0 0;font-size:clamp(1.9rem, 3.4vw, 2.9rem);">User Accounts</h1>
+  </div>
+  <button type="button" data-open-dialog="pn-create-user-dialog" class="pn-btn pn-btn-primary pn-btn-sm">+ Create User Account</button>
+</div>
+
+{% if create_form.errors %}
+  <div class="pn-alert pn-alert-error">
+    <strong>User creation failed:</strong> {{ create_form.errors }}
+  </div>
+{% endif %}
+
+<search class="pn-card" style="padding:1.25rem 1.5rem;">
+  <form method="GET" action="{% url 'admin_user_list' %}" class="pn-filter-grid">
+    <div class="pn-field" style="margin:0;">
+      <label for="adm-u-q" class="pn-label">Search Name / Email</label>
+      <input id="adm-u-q" type="search" name="search" value="{{ search_query }}" class="pn-input" placeholder="Search username, name, email...">
     </div>
+    <div class="pn-field" style="margin:0;">
+      <label for="adm-u-role" class="pn-label">Role Filter</label>
+      <select id="adm-u-role" name="role" class="pn-select">
+        <option value="" {% if not role_filter %}selected{% endif %}>All Roles</option>
+        <option value="buyer" {% if role_filter == 'buyer' %}selected{% endif %}>Buyer / Resident</option>
+        <option value="agent" {% if role_filter == 'agent' %}selected{% endif %}>Property Advisor</option>
+        <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Administrator</option>
+      </select>
+    </div>
+    <div class="pn-row" style="align-self:end;">
+      <button type="submit" class="pn-btn pn-btn-primary">Filter</button>
+      <a href="{% url 'admin_user_list' %}" class="pn-btn">Reset</a>
+    </div>
+  </form>
+</search>
 
-    <section class="p-6 lg:p-10">
-        
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="text-gray-600 font-medium">
-                Total <span class="text-indigo-600 font-bold">{{ users.count }}</span> users found
+<div class="pn-table-wrap pn-native-cursor">
+  <table class="pn-table">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Contact</th>
+        <th>Role Assignment</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+        <tr>
+          <td data-label="User">
+            <div class="pn-row" style="gap:0.75rem;flex-wrap:nowrap;">
+              {% if u.profile %}
+                <img src="{{ u.profile.url }}" alt="{{ u.username }}" class="pn-avatar" style="width:40px;height:40px;">
+              {% else %}
+                <span class="pn-avatar pn-avatar-initials" style="width:40px;height:40px;font-size:0.78rem;">{{ u.username|slice:":2"|upper }}</span>
+              {% endif %}
+              <div>
+                <div style="font-weight:600;">{{ u.get_full_name|default:u.username }}</div>
+                <div class="pn-muted" style="font-size:0.78rem;">@{{ u.username }} · Joined {{ u.date_joined|date:"M Y" }}</div>
+              </div>
             </div>
-            
-            <form method="GET" action="." class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                <div class="relative w-full sm:w-64">
-                    <input type="text" name="search" placeholder="Search name or email..." value="{{ request.GET.search }}" 
-                           class="w-full border border-gray-300 rounded-md py-2 pl-10 pr-3 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400"></i>
-                </div>
-                
-                <select name="role" onchange="this.form.submit()" class="border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-indigo-500 text-sm cursor-pointer">
-                    <option value="">All Roles</option>
-                    <option value="buyer" {% if request.GET.role == 'buyer' %}selected{% endif %}>Buyer</option>
-                    <option value="agent" {% if request.GET.role == 'agent' %}selected{% endif %}>Agent</option>
-                    <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>Admin</option>
-                </select>
+          </td>
+          <td data-label="Contact">
+            <div style="font-size:0.86rem;">{{ u.email }}</div>
+            {% if u.phone %}<div class="pn-muted" style="font-size:0.78rem;">{{ u.phone }}</div>{% endif %}
+          </td>
+          <td data-label="Role">
+            <form method="POST" action="{% url 'admin_update_user_role' u.id %}" class="pn-row" style="gap:0.4rem;flex-wrap:nowrap;">
+              {% csrf_token %}
+              <select name="role" aria-label="Role for {{ u.username }}" class="pn-select" style="min-height:36px;padding:0.35rem 2rem 0.35rem 0.75rem;font-size:0.8rem;">
+                <option value="buyer" {% if u.role == 'buyer' %}selected{% endif %}>Buyer</option>
+                <option value="agent" {% if u.role == 'agent' %}selected{% endif %}>Advisor</option>
+                <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
+              </select>
+              <button type="submit" class="pn-btn pn-btn-sm">Save</button>
             </form>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 text-gray-500 text-sm border-b border-gray-200">
-                            <th class="px-6 py-4 font-medium uppercase tracking-wider">User Info</th>
-                            <th class="px-6 py-4 font-medium uppercase tracking-wider">Role</th>
-                            <th class="px-6 py-4 font-medium uppercase tracking-wider">Joined Date</th>
-                            <th class="px-6 py-4 font-medium uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-4 font-medium uppercase tracking-wider text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        
-                        {% for user in users %}
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full border border-gray-200 shadow-sm overflow-hidden flex-shrink-0 bg-indigo-50 flex items-center justify-center font-bold text-indigo-600">
-                                    {% if user.profile_picture %}
-                                        <img src="{{ user.profile_picture.url }}" class="w-full h-full object-cover">
-                                    {% else %}
-                                        {{ user.username|first|upper }}
-                                    {% endif %}
-                                </div>
-                                <div>
-                                    <p class="text-sm font-bold text-gray-800 mb-0">{{ user.first_name|default:user.username }} {{ user.last_name }}</p>
-                                    <p class="text-xs text-gray-500 mb-0">{{ user.email }}</p>
-                                </div>
-                            </td>
-                            
-                            <td class="px-6 py-4">
-                                {% if user.role == 'admin' or user.is_superuser %}
-                                    <span class="bg-purple-100 text-purple-700 text-xs px-2.5 py-1 rounded-md font-bold uppercase tracking-wider border border-purple-200">Admin</span>
-                                {% elif user.role == 'agent' %}
-                                    <span class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-1 rounded-md font-bold uppercase tracking-wider border border-indigo-200">Agent</span>
-                                {% else %}
-                                    <span class="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-md font-bold uppercase tracking-wider border border-gray-200">Buyer</span>
-                                {% endif %}
-                            </td>
-                            
-                            <td class="px-6 py-4 text-sm text-gray-600 font-medium">
-                                {{ user.date_joined|date:"M d, Y" }}
-                            </td>
-                            
-                            <td class="px-6 py-4">
-                                {% if user.is_active %}
-                                    <span class="text-green-600 text-sm font-bold flex items-center gap-1"><i class="fa-solid fa-circle text-[8px]"></i> Active</span>
-                                {% else %}
-                                    <span class="text-red-500 text-sm font-bold flex items-center gap-1"><i class="fa-solid fa-circle text-[8px]"></i> Suspended</span>
-                                {% endif %}
-                            </td>
-                            
-                            <td class="px-6 py-4 text-right space-x-2">
-                                <a href="#" class="text-gray-400 hover:text-indigo-600 transition" title="View Profile"><i class="fa-solid fa-eye"></i></a>
-                                <a href="#" class="text-gray-400 hover:text-blue-600 transition" title="Edit User"><i class="fa-solid fa-pen-to-square"></i></a>
-                                {% if user.is_active %}
-                                    <a href="#" class="text-gray-400 hover:text-orange-500 transition" title="Suspend User"><i class="fa-solid fa-ban"></i></a>
-                                {% else %}
-                                    <a href="#" class="text-gray-400 hover:text-green-500 transition" title="Reactivate User"><i class="fa-solid fa-check-circle"></i></a>
-                                {% endif %}
-                                <a href="#" class="text-gray-400 hover:text-red-600 transition" title="Delete User"><i class="fa-solid fa-trash-can"></i></a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-gray-500">
-                                <i class="fa-solid fa-users-slash text-3xl mb-3 text-gray-300 block"></i>
-                                No users found matching your criteria.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+          </td>
+          <td data-label="Status">
+            {% if u.is_active %}
+              <span class="pn-badge pn-badge-available">Active</span>
+            {% else %}
+              <span class="pn-badge pn-badge-cancelled">Suspended</span>
+            {% endif %}
+          </td>
+          <td data-label="Actions">
+            <div class="pn-row" style="gap:0.4rem;">
+              {% if u.id != request.user.id %}
+                <button type="button"
+                        class="pn-btn pn-btn-sm"
+                        data-confirm-action="{% url 'admin_toggle_user_active' u.id %}"
+                        data-confirm-title="{% if u.is_active %}Suspend User{% else %}Activate User{% endif %}"
+                        data-confirm-body="{% if u.is_active %}Suspend login access for @{{ u.username }}?{% else %}Restore active status for @{{ u.username }}?{% endif %}"
+                        data-confirm-label="{% if u.is_active %}Suspend{% else %}Activate{% endif %}"
+                        data-confirm-variant="primary">
+                  {% if u.is_active %}Suspend{% else %}Activate{% endif %}
+                </button>
+                <button type="button"
+                        class="pn-btn pn-btn-danger pn-btn-sm"
+                        data-confirm-action="{% url 'admin_delete_user' u.id %}"
+                        data-confirm-title="Delete Account"
+                        data-confirm-body="Permanently delete user '@{{ u.username }}' and associated data?"
+                        data-confirm-label="Delete User">
+                  Delete
+                </button>
+              {% else %}
+                <span class="pn-muted" style="font-size:0.78rem;">Current Admin</span>
+              {% endif %}
             </div>
-        </div>
-        
-    </section>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="pn-muted">No user accounts found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" with page_obj=page_obj %}
+{% endblock %}
+
+{% block extra_modals %}
+<dialog id="pn-create-user-dialog" class="pn-dialog pn-dialog-wide" closedby="any" aria-labelledby="cu-title">
+  <div class="pn-stack-md">
+    <div class="pn-row-between">
+      <p class="pn-kicker" style="margin:0;">Account Provisioning</p>
+      <button type="button" data-close-dialog aria-label="Close modal" style="background:transparent;border:0;color:var(--g2-sand-dim);font-size:1.35rem;">×</button>
+    </div>
+    <h2 id="cu-title" class="pn-h3" style="margin:0;">Create New Platform User</h2>
+    <form method="POST" action="{% url 'admin_user_list' %}" class="pn-validated-form">
+      {% csrf_token %}
+      <div class="pn-grid-2">
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.username.id_for_label }}">Username *</label>{{ create_form.username }}</div>
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.email.id_for_label }}">Email *</label>{{ create_form.email }}</div>
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.first_name.id_for_label }}">First Name</label>{{ create_form.first_name }}</div>
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.last_name.id_for_label }}">Last Name</label>{{ create_form.last_name }}</div>
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.role.id_for_label }}">Role *</label>{{ create_form.role }}</div>
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.phone.id_for_label }}">Phone</label>{{ create_form.phone }}</div>
+      </div>
+      <div class="pn-field"><label class="pn-label" for="{{ create_form.password.id_for_label }}">Initial Password *</label>{{ create_form.password }}</div>
+      <div class="pn-field"><label class="pn-label" for="{{ create_form.bio.id_for_label }}">Bio</label>{{ create_form.bio }}</div>
+      <label class="pn-row" style="margin-bottom:1.25rem;gap:0.65rem;">
+        {{ create_form.is_active }}
+        <span class="pn-label" style="margin:0;">Account Immediately Active</span>
+      </label>
+      <div class="pn-row" style="justify-content:flex-end;">
+        <button type="button" data-close-dialog class="pn-btn pn-btn-sm">Cancel</button>
+        <button type="submit" class="pn-btn pn-btn-primary">Create Account →</button>
+      </div>
+    </form>
+  </div>
+</dialog>
 {% endblock %}

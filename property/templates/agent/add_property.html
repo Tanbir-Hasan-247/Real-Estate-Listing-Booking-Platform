@@ -1,104 +1,217 @@
-{% extends "agent/agent_base.html" %}
+{% extends base_template|default:"agent/agent_base.html" %}
+{% load static %}
 
-{% block title %}Add New Property - PropNest Agent{% endblock %}
+{% block title %}{% if property %}Edit {{ property.title }}{% else %}Publish New Residence{% endif %} — PropNest{% endblock %}
 
-{% block agent_content %}
-    <!-- Page Header -->
-    <div class="bg-indigo-900 text-white py-8 px-6 lg:px-10">
-        <h1 class="text-2xl md:text-3xl font-bold mb-2">Add New Property</h1>
-        <p class="text-indigo-200 mb-0">Fill in the details below to list a new property on the market.</p>
+{% block portal_content %}
+<div class="pn-row-between" style="align-items:flex-end;">
+  <div>
+    <p class="pn-kicker">{% if is_admin_context %}Admin Inventory{% else %}Advisor Listing Studio{% endif %}</p>
+    <h1 class="pn-h1" style="margin:0.35rem 0 0;font-size:clamp(1.9rem, 3.4vw, 2.9rem);">
+      {% if property %}Edit "{{ property.title }}"{% else %}Publish Architectural Residence{% endif %}
+    </h1>
+  </div>
+  {% if property %}
+    <a href="{% url 'property_detail' property.id %}" class="pn-btn pn-btn-sm">Preview Live Page →</a>
+  {% endif %}
+</div>
+
+<section class="pn-card" style="padding:clamp(1.5rem, 3.5vw, 2.5rem);">
+  <form method="POST" enctype="multipart/form-data" class="pn-validated-form pn-native-cursor" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="pn-alert pn-alert-error" style="margin-bottom:1.25rem;">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div class="pn-grid-2">
+      <div class="pn-field">
+        <label for="{{ form.title.id_for_label }}" class="pn-label">Residence Title *</label>
+        {{ form.title }}
+        <span id="err-prop-title" class="pn-error-msg">Title is required.</span>
+        {% if form.title.errors %}<ul class="pn-server-errors">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+
+      <div class="pn-field">
+        <label for="{{ form.property_type.id_for_label }}" class="pn-label">Architectural Category *</label>
+        {{ form.property_type }}
+        {% if form.property_type.errors %}<ul class="pn-server-errors">{% for e in form.property_type.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
     </div>
 
-    <!-- Main Content Area -->
-    <section class="p-6 lg:p-10 max-w-5xl">
-        
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <!-- enctype="multipart/form-data" দেওয়া বাধ্যতামূলক ছবি আপলোডের জন্য -->
-            <form method="POST" enctype="multipart/form-data" class="p-6 md:p-8">
-                {% csrf_token %}
-                
-                <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-3 mb-6">Basic Information</h3>
-                
-                <div class="space-y-5 mb-8">
-                    <!-- Title -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Property Title <span class="text-red-500">*</span></label>
-                        {{ form.title }}
-                    </div>
-                    
-                    <!-- Description -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Description <span class="text-red-500">*</span></label>
-                        {{ form.description }}
-                    </div>
-                </div>
+    <div class="pn-grid-3">
+      <div class="pn-field">
+        <label for="{{ form.listing_type.id_for_label }}" class="pn-label">Listing Mode *</label>
+        {{ form.listing_type }}
+        {% if form.listing_type.errors %}<ul class="pn-server-errors">{% for e in form.listing_type.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
 
-                <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-3 mb-6">Property Details</h3>
-                
-                <!-- 2-Column Grid for Details -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Property Type <span class="text-red-500">*</span></label>
-                        {{ form.property_type }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Listing Type <span class="text-red-500">*</span></label>
-                        {{ form.listing_type }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Asking Price ($) <span class="text-red-500">*</span></label>
-                        {{ form.price }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Total Area (sqft) <span class="text-red-500">*</span></label>
-                        {{ form.area_sqft }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Bedrooms</label>
-                        {{ form.bedrooms }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Bathrooms</label>
-                        {{ form.bathrooms }}
-                    </div>
-                </div>
+      <div class="pn-field">
+        <label for="{{ form.status.id_for_label }}" class="pn-label">Availability Status</label>
+        {{ form.status }}
+        {% if form.status.errors %}<ul class="pn-server-errors">{% for e in form.status.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
 
-                <h3 class="text-lg font-bold text-gray-800 border-b border-gray-100 pb-3 mb-6">Location & Media</h3>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">City <span class="text-red-500">*</span></label>
-                        {{ form.city }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Full Address/Location <span class="text-red-500">*</span></label>
-                        {{ form.location }}
-                    </div>
-                </div>
+      <div class="pn-field">
+        <label for="{{ form.price.id_for_label }}" class="pn-label">Valuation / Rent ($ USD) *</label>
+        {{ form.price }}
+        <span id="err-prop-price" class="pn-error-msg">Enter a positive price amount.</span>
+        {% if form.price.errors %}<ul class="pn-server-errors">{% for e in form.price.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+    </div>
 
-                <!-- Multiple Image Upload -->
-                <div class="mb-8 bg-indigo-50/50 p-6 rounded-xl border border-dashed border-indigo-200 text-center">
-                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 mb-3">
-                        <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
-                    </div>
-                    <label class="block text-sm font-bold text-gray-800 mb-2">Upload Property Images</label>
-                    <p class="text-xs text-gray-500 mb-4">You can select multiple images by holding down CTRL or CMD.</p>
-                    <div class="w-full flex justify-center">
-                        {{ form.images }}
-                    </div>
-                </div>
+    <div class="pn-grid-3">
+      <div class="pn-field">
+        <label for="{{ form.bedrooms.id_for_label }}" class="pn-label">Bedrooms</label>
+        {{ form.bedrooms }}
+      </div>
+      <div class="pn-field">
+        <label for="{{ form.bathrooms.id_for_label }}" class="pn-label">Bathrooms</label>
+        {{ form.bathrooms }}
+      </div>
+      <div class="pn-field">
+        <label for="{{ form.area_sqft.id_for_label }}" class="pn-label">Floorplate (Sq Ft) *</label>
+        {{ form.area_sqft }}
+        {% if form.area_sqft.errors %}<ul class="pn-server-errors">{% for e in form.area_sqft.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+    </div>
 
-                <!-- Submit Buttons -->
-                <div class="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
-                    <a href="{% url 'agent_dashboard' %}" class="px-6 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-900 transition text-decoration-none">
-                        Cancel
-                    </a>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-md transition flex items-center gap-2">
-                        <i class="fa-solid fa-check"></i> Publish Property
-                    </button>
-                </div>
-                
-            </form>
+    <div class="pn-grid-3">
+      <div class="pn-field">
+        <label for="{{ form.location.id_for_label }}" class="pn-label">Street / Sector Address *</label>
+        {{ form.location }}
+      </div>
+      <div class="pn-field">
+        <label for="{{ form.city.id_for_label }}" class="pn-label">City *</label>
+        {{ form.city }}
+      </div>
+      <div class="pn-field">
+        <label for="{{ form.state.id_for_label }}" class="pn-label">Division / State</label>
+        {{ form.state }}
+      </div>
+    </div>
+
+    <div class="pn-grid-2">
+      <div class="pn-field">
+        <label for="{{ form.latitude.id_for_label }}" class="pn-label">Latitude (Map Pin Optional)</label>
+        {{ form.latitude }}
+      </div>
+      <div class="pn-field">
+        <label for="{{ form.longitude.id_for_label }}" class="pn-label">Longitude (Map Pin Optional)</label>
+        {{ form.longitude }}
+      </div>
+    </div>
+
+    {% if form.assigned_agent %}
+      <div class="pn-field">
+        <label for="{{ form.assigned_agent.id_for_label }}" class="pn-label">Assigned Licensed Advisor (Admin Override)</label>
+        {{ form.assigned_agent }}
+      </div>
+    {% endif %}
+
+    <div class="pn-field">
+      <label for="{{ form.description.id_for_label }}" class="pn-label">Architectural Narrative &amp; Highlights *</label>
+      {{ form.description }}
+      {% if form.description.errors %}<ul class="pn-server-errors">{% for e in form.description.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+
+    <div class="pn-row" style="margin-bottom:1.25rem;">
+      <label class="pn-row" style="gap:0.65rem;cursor:pointer;">
+        {{ form.is_featured }}
+        <span class="pn-label" style="margin:0;">Feature this residence in Home Showcase</span>
+      </label>
+    </div>
+
+    <div class="pn-field">
+      <label for="{{ form.images.id_for_label }}" class="pn-label">Upload Property Gallery Images (Multi-Select)</label>
+      <span class="pn-hint">Select multiple high-resolution architectural photographs to append to this residence gallery.</span>
+      {{ form.images }}
+      <div id="pn-upload-preview" class="pn-gallery-thumbs"></div>
+      {% if form.images.errors %}<ul class="pn-server-errors">{% for e in form.images.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+
+    <div class="pn-row">
+      <button type="submit" class="pn-btn pn-btn-primary">
+        {% if property %}Save Changes →{% else %}Publish Residence →{% endif %}
+      </button>
+      <a href="{% if is_admin_context %}{% url 'admin_property_list' %}{% else %}{% url 'agent_property_list' %}{% endif %}" class="pn-btn">Cancel</a>
+    </div>
+  </form>
+</section>
+
+<!-- Existing Images Management when Editing -->
+{% if property and property.images.all %}
+  <section class="pn-card pn-stack-md" style="padding:1.75rem;">
+    <div>
+      <p class="pn-kicker">Existing Gallery</p>
+      <h2 class="pn-h3" style="margin:0.3rem 0 0;">Current Photographs ({{ property.images.count }})</h2>
+    </div>
+    <div class="pn-grid-4">
+      {% for img in property.images.all %}
+        <div class="pn-card-subtle pn-stack-sm" style="padding:0.65rem;">
+          <img src="{{ img.safe_url }}" alt="{{ property.title }} photo" style="width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:10px;">
+          <button type="button"
+                  class="pn-btn pn-btn-danger pn-btn-sm w-full"
+                  data-confirm-action="{% url 'delete_property_image' img.id %}"
+                  data-confirm-title="Remove Photograph"
+                  data-confirm-body="Permanently delete this photograph from '{{ property.title }}'?"
+                  data-confirm-label="Delete Photo">
+            Remove Photo
+          </button>
         </div>
-    </section>
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (() => {
+    const inputs = [
+      '{{ form.title.id_for_label }}',
+      '{{ form.price.id_for_label }}',
+      '{{ form.bedrooms.id_for_label }}',
+      '{{ form.bathrooms.id_for_label }}',
+      '{{ form.area_sqft.id_for_label }}',
+      '{{ form.location.id_for_label }}',
+      '{{ form.city.id_for_label }}',
+      '{{ form.state.id_for_label }}',
+      '{{ form.latitude.id_for_label }}',
+      '{{ form.longitude.id_for_label }}',
+      '{{ form.images.id_for_label }}'
+    ];
+    inputs.forEach(id => document.getElementById(id)?.classList.add('pn-input'));
+    [
+      '{{ form.property_type.id_for_label }}',
+      '{{ form.listing_type.id_for_label }}',
+      '{{ form.status.id_for_label }}'
+      {% if form.assigned_agent %},'{{ form.assigned_agent.id_for_label }}'{% endif %}
+    ].forEach(id => document.getElementById(id)?.classList.add('pn-select'));
+    document.getElementById('{{ form.description.id_for_label }}')?.classList.add('pn-textarea');
+    document.getElementById('{{ form.title.id_for_label }}')?.setAttribute('data-error', 'err-prop-title');
+    document.getElementById('{{ form.price.id_for_label }}')?.setAttribute('data-error', 'err-prop-price');
+
+    const imgInput = document.getElementById('{{ form.images.id_for_label }}');
+    const previewBox = document.getElementById('pn-upload-preview');
+    if (imgInput && previewBox) {
+      imgInput.addEventListener('change', () => {
+        previewBox.innerHTML = '';
+        Array.from(imgInput.files || []).forEach(file => {
+          if (!file.type.startsWith('image/')) return;
+          const wrap = document.createElement('div');
+          wrap.className = 'pn-thumb-btn';
+          const img = document.createElement('img');
+          img.alt = file.name;
+          img.src = URL.createObjectURL(file);
+          img.onload = () => URL.revokeObjectURL(img.src);
+          wrap.appendChild(img);
+          previewBox.appendChild(wrap);
+        });
+      });
+    }
+  })();
+</script>
 {% endblock %}

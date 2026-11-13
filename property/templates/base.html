@@ -1,178 +1,408 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %} PropNest {% endblock %}</title>
-    
-    <link rel="stylesheet" href="{% static 'style.css' %}" />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-      integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  
-  <body class="bg-gray-50 flex flex-col min-h-screen">
-    <header class="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div class="container mx-auto flex justify-between items-center py-3 px-4">
-            <a href="/" class="text-2xl font-bold text-indigo-600 flex items-center gap-2 text-decoration-none">
-                <i class="fa-solid fa-house-chimney"></i>
-                <span>PropNest</span>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="{% block meta_description %}PropNest Real Estate — Architectural residences, curated investments, and private advisory tours across prime urban districts.{% endblock %}">
+  <title>{% block title %}PropNest Real Estate — Architectural Living &amp; Private Holdings{% endblock %}</title>
+
+  <script>
+    (() => {
+      try {
+        const stored = localStorage.getItem('propnest-theme');
+        const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+        const theme = (stored === 'light' || stored === 'dark') ? stored : (prefersLight ? 'light' : 'dark');
+        const meta = document.querySelector('meta[name="color-scheme"]');
+        if (meta && (stored === 'light' || stored === 'dark')) {
+          meta.setAttribute('content', stored);
+        }
+        window.__PN_INITIAL_THEME__ = theme;
+      } catch (_) {
+        window.__PN_INITIAL_THEME__ = 'dark';
+      }
+    })();
+  </script>
+
+  <link rel="icon" type="image/svg+xml" href="{% static 'assets/favicon.svg' %}">
+  <link rel="preload" href="{% static 'assets/golpo.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/golpo-design.css' %}">
+  <link rel="stylesheet" href="{% static 'css/propnest-app.css' %}">
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "{% static 'assets/three/build/three.module.min.js' %}",
+        "three/addons/": "{% static 'assets/three/examples/jsm/' %}"
+      }
+    }
+  </script>
+
+  <script>
+    window.PROPNEST_CONFIG = {
+      menuPanels: [
+        "{% static 'assets/menu-0.avif' %}",
+        "{% static 'assets/menu-1.avif' %}",
+        "{% static 'assets/menu-2.avif' %}",
+        "{% static 'assets/menu-3.avif' %}",
+        "{% static 'assets/menu-4.avif' %}",
+        "{% static 'assets/menu-5.avif' %}"
+      ],
+      towerHdrUrl: "{% static 'assets/golpo-aleya-evening-sky.hdr' %}",
+      towerGlbUrl: "{% static 'assets/golpo-aleya-building-coloured.glb' %}"
+    };
+  </script>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div id="top" class="g2" data-g2-theme="dark">
+    <script>
+      (() => {
+        const el = document.getElementById('top');
+        if (el && window.__PN_INITIAL_THEME__) {
+          el.setAttribute('data-g2-theme', window.__PN_INITIAL_THEME__);
+        }
+      })();
+    </script>
+
+    <!-- Custom Editorial Cursor -->
+    <div data-g2-cursor="ring" aria-hidden="true" class="pointer-events-none fixed left-0 top-0 z-[9999] h-10 w-10 rounded-full border border-[var(--g2-sand)]/50 opacity-0 transition-[width,height,background-color,opacity] duration-300" style="opacity: 0; visibility: hidden; width: 40px; height: 40px; background-color: transparent;"></div>
+    <div data-g2-cursor="dot" aria-hidden="true" class="pointer-events-none fixed left-0 top-0 z-[9999] h-1.5 w-1.5 rounded-full bg-[var(--g2-gold)] opacity-0 transition-opacity duration-300" style="opacity: 0; visibility: hidden;"></div>
+
+    <a href="#main-content" class="visually-hidden">Skip to main content</a>
+
+    <!-- Fixed Translucent Header (Exact Golpo Lockup & Pill Toggles) -->
+    <header class="fixed inset-x-0 top-0 z-[60]">
+      <div data-g2-header-blur aria-hidden="true" class="pointer-events-none absolute inset-x-0 -bottom-10 top-0 transition-opacity duration-500 opacity-0" style="background:linear-gradient(to bottom, color-mix(in srgb, var(--g2-ink) 90%, transparent) 0%, color-mix(in srgb, var(--g2-ink) 56%, transparent) 62%, transparent 100%);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);mask-image:linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);-webkit-mask-image:linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%)"></div>
+      <div class="relative flex items-center justify-between px-4 py-5 sm:px-6 md:px-[7vw] md:py-7">
+        <a class="shrink-0" aria-label="PROPNEST REAL ESTATE — home" href="{% url 'home' %}">
+          <svg viewBox="0 0 1940 480" class="h-7 w-auto sm:h-8 md:h-14" role="img" aria-label="PropNest Real Estate">
+            <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="24">
+              <path d="M 38 352 L 266 124 L 494 352" stroke="#5d332d"></path>
+              <path d="M 104 326 L 266 164 L 428 326" stroke="#a04624"></path>
+              <path d="M 170 300 L 266 204 L 362 300" stroke="#f05a1a"></path>
+            </g>
+            <g fill="var(--g2-lockup-type)" class="transition-[fill] duration-700" font-family="'golpo', system-ui, -apple-system, sans-serif">
+              <text x="568" y="268" font-size="214" font-weight="400" letter-spacing="32">PROPNEST</text>
+              <text x="576" y="376" font-size="54" font-weight="400" letter-spacing="84">REAL&#160;&#160;ESTATE</text>
+            </g>
+          </svg>
+        </a>
+
+        <!-- Subtle Desktop Links integrated inside clean header geometry -->
+        <nav class="pn-header-links" aria-label="Primary quick navigation">
+          <a href="{% url 'property_list' %}" class="g2-nav text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" style="font-size:0.74rem;">Residences</a>
+          <a href="{% url 'agent_list' %}" class="g2-nav text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" style="font-size:0.74rem;">Advisors</a>
+          <a href="{% url 'contact' %}" class="g2-nav text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" style="font-size:0.74rem;">Contact</a>
+          {% if user.is_authenticated %}
+            <a href="{% url 'saved_properties' %}" class="g2-nav text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" style="font-size:0.74rem;display:inline-flex;align-items:center;gap:0.35rem;">
+              Saved <span data-nav-saved-count style="background:var(--g2-ember);color:#fff;padding:0.12rem 0.45rem;border-radius:999px;font-size:0.62rem;">{{ saved_properties_count }}</span>
             </a>
+            {% if user.is_superuser or user.role == 'admin' %}
+              <a href="{% url 'admin_dashboard' %}" class="g2-nav text-[var(--g2-gold)] transition-colors hover:text-[var(--g2-sand)]" style="font-size:0.74rem;display:inline-flex;align-items:center;gap:0.35rem;">
+                Admin{% if pending_admin_tours_count %} <span style="background:var(--g2-ember);color:#fff;padding:0.1rem 0.4rem;border-radius:999px;font-size:0.6rem;">{{ pending_admin_tours_count }}</span>{% endif %}
+              </a>
+            {% elif user.role == 'agent' %}
+              <a href="{% url 'agent_dashboard' %}" class="g2-nav text-[var(--g2-gold)] transition-colors hover:text-[var(--g2-sand)]" style="font-size:0.74rem;display:inline-flex;align-items:center;gap:0.35rem;">
+                Studio{% if pending_agent_tours_count %} <span style="background:var(--g2-ember);color:#fff;padding:0.1rem 0.4rem;border-radius:999px;font-size:0.6rem;">{{ pending_agent_tours_count }}</span>{% endif %}
+              </a>
+            {% else %}
+              <a href="{% url 'profile' %}" class="g2-nav text-[var(--g2-gold)] transition-colors hover:text-[var(--g2-sand)]" style="font-size:0.74rem;">{{ user.first_name|default:user.username }}</a>
+            {% endif %}
+          {% else %}
+            <a href="{% url 'login' %}" class="g2-nav text-[var(--g2-gold)] transition-colors hover:text-[var(--g2-sand)]" style="font-size:0.74rem;">Client Portal</a>
+          {% endif %}
+        </nav>
 
-            <nav class="hidden md:flex space-x-6 text-gray-600 font-medium">
-                <a href="{% url 'home' %}" class="hover:text-indigo-600 transition text-decoration-none">Home</a>
-                <a href="{% url 'property_list' %}" class="hover:text-indigo-600 transition text-decoration-none">Properties</a>
-                <a href="{% url 'agent_list' %}" class="hover:text-indigo-600 transition text-decoration-none">Agents</a>
-                <a href="#" class="hover:text-indigo-600 transition text-decoration-none">Contact</a>
-            </nav>
-
-            <div class="flex items-center space-x-4 md:space-x-6">
-                
-                {% if request.user.is_authenticated %}
-                <a href="{% url 'saved_properties' %}" class="relative text-gray-500 hover:text-red-500 transition text-decoration-none flex items-center mt-1">
-                    <i class="fa-regular fa-heart text-2xl"></i>
-                    {% if request.user.saved_properties.count > 0 %}
-                    <span class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-sm">
-                        {{ request.user.saved_properties.count }}
-                    </span>
-                    {% endif %}
-                </a>
-                {% endif %}
-
-                {% if request.user.is_authenticated %}
-                    <div class="dropdown">
-                        <button class="flex items-center gap-2 text-gray-700 hover:text-indigo-600 focus:outline-none border-0 bg-transparent" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            
-                            <div class="w-10 h-10 rounded-full bg-indigo-100 flex justify-center items-center text-indigo-600 font-bold overflow-hidden border-2 border-indigo-200">
-                                {% if request.user.profile %}
-                                    <img src="{{ request.user.profile.url }}" class="w-full h-full object-cover" alt="Profile">
-                                {% else %}
-                                    <span class="text-sm tracking-wide">
-                                        {% if request.user.first_name and request.user.last_name %}
-                                            {{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}
-                                        {% else %}
-                                            {{ request.user.username|first|upper }}
-                                        {% endif %}
-                                    </span>
-                                {% endif %}
-                            </div>
-                            
-                            <span class="font-semibold hidden md:block">{{ request.user.username }}</span>
-                            <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
-                        </button>
-                        
-                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 rounded-lg">
-                            <li>
-                                <a class="dropdown-item py-2 text-gray-700 hover:bg-gray-50" href="#">
-                                    <i class="fa-regular fa-id-badge mr-2 text-indigo-500"></i> My Profile
-                                </a>
-                            </li>
-                            
-                            {% if request.user.role == 'agent' or request.user.role == 'admin' or request.user.is_superuser %}
-                            <li>
-                                <a class="dropdown-item py-2 text-gray-700 hover:bg-gray-50" href="{% url 'agent_dashboard' %}">
-                                    <i class="fa-solid fa-gauge mr-2 text-indigo-500"></i> Dashboard
-                                </a>
-                            </li>
-                            {% endif %}
-                            
-                            <li><hr class="dropdown-divider"></li>
-                            
-                            <li>
-                                <form method="post" action="{% url 'logout' %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="dropdown-item py-2 text-red-600 hover:bg-red-50 font-medium">
-                                        <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Logout
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
-                {% else %}
-                    <div class="hidden md:flex items-center space-x-4">
-                        <a href="{% url 'login' %}" class="text-gray-600 hover:text-indigo-600 font-medium transition text-decoration-none">Log In</a>
-                        <a href="{% url 'register' %}" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition text-decoration-none shadow-sm">
-                            <i class="fa-solid fa-user-plus mr-1"></i> Sign Up
-                        </a>
-                    </div>
-                {% endif %}
-
-            </div>
-        </div>
-    </header>
-
-    <main class="flex-grow">
-        {% block content %} {% endblock %}
-    </main>
-
-    <footer class="bg-gray-900 text-gray-300 py-12 mt-auto">
-      <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
-        
-        <div>
-          <a href="/" class="text-2xl font-bold text-white flex items-center gap-2 text-decoration-none mb-4">
-            <i class="fa-solid fa-house-chimney text-brand"></i>
-            <span>PropNest</span>
-          </a>
-          <p class="text-sm text-gray-400 mb-4">Your trusted partner in finding the perfect home, office, or land. Making real estate simple and accessible.</p>
-          <div class="flex space-x-4">
-            <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-facebook-f"></i></a>
-            <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-twitter"></i></a>
-            <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-instagram"></i></a>
-          </div>
-        </div>
-
-        <div>
-          <h4 class="text-white font-bold mb-4 uppercase text-sm tracking-wider">Quick Links</h4>
-          <ul class="space-y-2 text-sm">
-            <li><a href="#" class="hover:text-brand transition text-decoration-none">Properties for Sale</a></li>
-            <li><a href="#" class="hover:text-brand transition text-decoration-none">Properties for Rent</a></li>
-            <li><a href="#" class="hover:text-brand transition text-decoration-none">Our Agents</a></li>
-            <li><a href="#" class="hover:text-brand transition text-decoration-none">Contact Us</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 class="text-white font-bold mb-4 uppercase text-sm tracking-wider">Support</h4>
-          <ul class="space-y-2 text-sm">
-            <li><a href="#" class="hover:text-brand transition text-decoration-none">FAQ</a></li>
-            <li><a href="#" class="hover:text-brand transition text-decoration-none">Terms of Service</a></li>
-            <li><a href="#" class="hover:text-brand transition text-decoration-none">Privacy Policy</a></li>
-            <li><a href="#" class="hover:text-brand transition text-decoration-none">Help Center</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 class="text-white font-bold mb-4 uppercase text-sm tracking-wider">Contact Us</h4>
-          <ul class="space-y-3 text-sm">
-            <li class="flex items-start"><i class="fa-solid fa-location-dot mt-1 mr-3 text-brand"></i> 123 PropNest Tower, Dhaka, Bangladesh</li>
-            <li class="flex items-center"><i class="fa-solid fa-phone mr-3 text-brand"></i> +880 1234 567890</li>
-            <li class="flex items-center"><i class="fa-solid fa-envelope mr-3 text-brand"></i> support@propnest.com</li>
-          </ul>
+        <div class="flex items-center gap-3 max-[359px]:gap-1.5 sm:gap-6 md:gap-10">
+          <button type="button" class="group flex items-center gap-2 max-[359px]:gap-1.5 md:gap-3" aria-label="Switch to light mode">
+            <span class="g2-nav block text-[0.6rem] transition-colors group-hover:text-[var(--g2-gold)] max-[359px]:hidden sm:text-inherit">dark</span>
+            <span class="relative flex h-6 w-[46px] items-center rounded-full border border-[var(--g2-sand)]/25 bg-[var(--g2-sand)]/[0.07] px-1 transition-colors group-hover:border-[var(--g2-gold)]">
+              <span class="block h-4 w-4 rounded-full bg-[var(--g2-gold)]" style="transform: translateX(22px);"></span>
+            </span>
+          </button>
+          <button type="button" class="group flex items-center gap-4 max-[359px]:gap-2.5" aria-expanded="false" aria-controls="g2-main-menu" aria-label="Open menu">
+            <span class="g2-nav transition-colors group-hover:text-[var(--g2-gold)]">Menu</span>
+            <span class="relative flex h-[11px] w-9 flex-col justify-between" aria-hidden="true">
+              <span class="block h-[2px] w-full bg-[var(--g2-sand)]" style="transform: none;"></span>
+              <span class="block h-[2px] w-full bg-[var(--g2-sand)]" style="transform: none;"></span>
+            </span>
+          </button>
         </div>
       </div>
-      
-      <div class="border-t border-gray-800 mt-12 pt-8 text-center text-sm text-gray-500">
-        <p>&copy; 2026 PropNest. All rights reserved.</p>
+    </header>
+
+    <!-- Fullscreen WebGL 3D Interactive Navigation Overlay (Exact 2-Col Cylinder Grid) -->
+    <div id="g2-main-menu" role="dialog" aria-modal="true" aria-label="Main menu" aria-hidden="true" inert tabindex="-1" class="g2-menu-dialog fixed inset-0 z-[55] bg-[var(--g2-ink)] outline-none" style="clip-path: inset(0% 0% 100% 0%);">
+      <div class="relative grid h-full grid-cols-1 content-center gap-10 overflow-y-auto px-6 pb-10 pt-28 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.25fr)] md:items-center md:gap-6 md:overflow-visible md:px-[7vw] md:py-0">
+        <nav aria-label="Main menu" data-lenis-prevent="true" class="relative z-10 md:max-h-[calc(100dvh-11rem)] md:self-center md:overflow-y-auto">
+          <ul id="g2-menu-primary">
+            <li class="group mb-3 md:mb-[min(1rem,1.6vh)]" style="opacity: 1; transform: none;">
+              <a class="g2-display block w-full py-1 text-left uppercase leading-[1.1] tracking-[0.01em] outline-none transition-colors focus-visible:text-[var(--g2-gold)] text-[var(--g2-gold)]" href="{% url 'property_list' %}" style="font-size: clamp(1.9rem, min(3.1vw, 5.4vh), 3.1rem); font-weight: 300;">
+                Residences
+                <span class="mt-1.5 block font-sans text-xs normal-case tracking-normal text-[var(--g2-sand-dim)] md:text-sm" style="font-weight: 400;">Everything we have curated for ownership &amp; lease</span>
+              </a>
+            </li>
+            <li class="group mb-3 md:mb-[min(1rem,1.6vh)]" style="opacity: 1; transform: none;">
+              <button type="button" id="g2-menu-about-btn" class="g2-display block w-full py-1 text-left uppercase leading-[1.1] tracking-[0.01em] outline-none transition-colors focus-visible:text-[var(--g2-gold)] text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" style="font-size: clamp(1.9rem, min(3.1vw, 5.4vh), 3.1rem); font-weight: 300;">
+                <span class="inline-flex items-center gap-[0.35em]">About PropNest<svg aria-hidden="true" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 h-[0.5em] w-[0.5em]"><path d="M4 1.5 8.5 6 4 10.5"></path></svg></span>
+                <span class="mt-1.5 block font-sans text-xs normal-case tracking-normal text-[var(--g2-sand-dim)] md:text-sm" style="font-weight: 400;">The advisors and architecture behind the addresses</span>
+              </button>
+            </li>
+            <li class="group mb-3 md:mb-[min(1rem,1.6vh)]" style="opacity: 1; transform: none;">
+              <a class="g2-display block w-full py-1 text-left uppercase leading-[1.1] tracking-[0.01em] outline-none transition-colors focus-visible:text-[var(--g2-gold)] text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" href="{% url 'agent_list' %}" style="font-size: clamp(1.9rem, min(3.1vw, 5.4vh), 3.1rem); font-weight: 300;">
+                Advisory Team
+                <span class="mt-1.5 block font-sans text-xs normal-case tracking-normal text-[var(--g2-sand-dim)] md:text-sm" style="font-weight: 400;">Licensed real estate specialists &amp; portfolio directors</span>
+              </a>
+            </li>
+            <li class="group mb-3 md:mb-[min(1rem,1.6vh)]" style="opacity: 1; transform: none;">
+              {% if user.is_authenticated %}
+                <a class="g2-display block w-full py-1 text-left uppercase leading-[1.1] tracking-[0.01em] outline-none transition-colors focus-visible:text-[var(--g2-gold)] text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" href="{% url 'my_tours' %}" style="font-size: clamp(1.9rem, min(3.1vw, 5.4vh), 3.1rem); font-weight: 300;">
+                  Scheduled Tours
+                  <span class="mt-1.5 block font-sans text-xs normal-case tracking-normal text-[var(--g2-sand-dim)] md:text-sm" style="font-weight: 400;">Your private property viewings &amp; saved collection ({{ saved_properties_count }})</span>
+                </a>
+              {% else %}
+                <a class="g2-display block w-full py-1 text-left uppercase leading-[1.1] tracking-[0.01em] outline-none transition-colors focus-visible:text-[var(--g2-gold)] text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" href="{% url 'register' %}" style="font-size: clamp(1.9rem, min(3.1vw, 5.4vh), 3.1rem); font-weight: 300;">
+                  Client Membership
+                  <span class="mt-1.5 block font-sans text-xs normal-case tracking-normal text-[var(--g2-sand-dim)] md:text-sm" style="font-weight: 400;">Register as a buyer or apply as a property advisor</span>
+                </a>
+              {% endif %}
+            </li>
+            <li class="group mb-3 md:mb-[min(1rem,1.6vh)]" style="opacity: 1; transform: none;">
+              <a class="g2-display block w-full py-1 text-left uppercase leading-[1.1] tracking-[0.01em] outline-none transition-colors focus-visible:text-[var(--g2-gold)] text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" href="{% url 'contact' %}" style="font-size: clamp(1.9rem, min(3.1vw, 5.4vh), 3.1rem); font-weight: 300;">
+                Contact
+                <span class="mt-1.5 block font-sans text-xs normal-case tracking-normal text-[var(--g2-sand-dim)] md:text-sm" style="font-weight: 400;">Own land or scheduling a viewing? Let’s talk</span>
+              </a>
+            </li>
+            <li class="group mb-3 md:mb-[min(1rem,1.6vh)]" style="opacity: 1; transform: none;">
+              {% if user.is_superuser or user.role == 'admin' %}
+                <a class="g2-display block w-full py-1 text-left uppercase leading-[1.1] tracking-[0.01em] outline-none transition-colors focus-visible:text-[var(--g2-gold)] text-[var(--g2-gold)] hover:text-[var(--g2-sand)]" href="{% url 'admin_dashboard' %}" style="font-size: clamp(1.9rem, min(3.1vw, 5.4vh), 3.1rem); font-weight: 300;">
+                  Admin Console
+                  <span class="mt-1.5 block font-sans text-xs normal-case tracking-normal text-[var(--g2-sand-dim)] md:text-sm" style="font-weight: 400;">Platform operations, advisor verification &amp; bookings</span>
+                </a>
+              {% elif user.role == 'agent' %}
+                <a class="g2-display block w-full py-1 text-left uppercase leading-[1.1] tracking-[0.01em] outline-none transition-colors focus-visible:text-[var(--g2-gold)] text-[var(--g2-gold)] hover:text-[var(--g2-sand)]" href="{% url 'agent_dashboard' %}" style="font-size: clamp(1.9rem, min(3.1vw, 5.4vh), 3.1rem); font-weight: 300;">
+                  Advisor Studio
+                  <span class="mt-1.5 block font-sans text-xs normal-case tracking-normal text-[var(--g2-sand-dim)] md:text-sm" style="font-weight: 400;">Publish residences &amp; confirm buyer tour requests</span>
+                </a>
+              {% elif user.is_authenticated %}
+                <a class="g2-display block w-full py-1 text-left uppercase leading-[1.1] tracking-[0.01em] outline-none transition-colors focus-visible:text-[var(--g2-gold)] text-[var(--g2-gold)] hover:text-[var(--g2-sand)]" href="{% url 'saved_properties' %}" style="font-size: clamp(1.9rem, min(3.1vw, 5.4vh), 3.1rem); font-weight: 300;">
+                  Saved Wishlist
+                  <span class="mt-1.5 block font-sans text-xs normal-case tracking-normal text-[var(--g2-sand-dim)] md:text-sm" style="font-weight: 400;">Inspect your shortlisted architectural residences</span>
+                </a>
+              {% else %}
+                <a class="g2-display block w-full py-1 text-left uppercase leading-[1.1] tracking-[0.01em] outline-none transition-colors focus-visible:text-[var(--g2-gold)] text-[var(--g2-gold)] hover:text-[var(--g2-sand)]" href="{% url 'login' %}" style="font-size: clamp(1.9rem, min(3.1vw, 5.4vh), 3.1rem); font-weight: 300;">
+                  Client Access
+                  <span class="mt-1.5 block font-sans text-xs normal-case tracking-normal text-[var(--g2-sand-dim)] md:text-sm" style="font-weight: 400;">Sign in to manage saved homes &amp; scheduled tours</span>
+                </a>
+              {% endif %}
+            </li>
+          </ul>
+
+          <div id="g2-menu-submenu" class="hidden">
+            <button type="button" id="g2-menu-back-btn" class="g2-nav inline-flex items-center gap-2 py-2 text-[var(--g2-sand)] outline-none transition-colors hover:text-[var(--g2-gold)] focus-visible:text-[var(--g2-gold)]">
+              <svg aria-hidden="true" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 h-3 w-3 rotate-180"><path d="M4 1.5 8.5 6 4 10.5"></path></svg>Back
+            </button>
+            <p class="g2-display mt-4 uppercase leading-[1.1] tracking-[0.01em] text-[var(--g2-gold)]" style="font-size: clamp(1.9rem, min(3.1vw, 5.4vh), 3.1rem); font-weight: 300;">About PropNest</p>
+            <ul class="mt-5 pl-4 md:pl-6">
+              <li class="mb-2"><a class="g2-display block py-1 leading-[1.15] text-[var(--g2-sand)] outline-none transition-colors hover:text-[var(--g2-gold)] focus-visible:text-[var(--g2-gold)]" href="{% url 'about' %}" style="font-size: clamp(1.5rem, min(2.4vw, 4.4vh), 2.4rem); font-weight: 300;">Our story &amp; philosophy</a></li>
+              <li class="mb-2"><a class="g2-display block py-1 leading-[1.15] text-[var(--g2-sand)] outline-none transition-colors hover:text-[var(--g2-gold)] focus-visible:text-[var(--g2-gold)]" href="{% url 'agent_list' %}" style="font-size: clamp(1.5rem, min(2.4vw, 4.4vh), 2.4rem); font-weight: 300;">Our advisory team</a></li>
+              <li class="mb-2"><a class="g2-display block py-1 leading-[1.15] text-[var(--g2-sand)] outline-none transition-colors hover:text-[var(--g2-gold)] focus-visible:text-[var(--g2-gold)]" href="{% url 'property_list' %}?listing_type=sale" style="font-size: clamp(1.5rem, min(2.4vw, 4.4vh), 2.4rem); font-weight: 300;">Residences for sale</a></li>
+              <li class="mb-2"><a class="g2-display block py-1 leading-[1.15] text-[var(--g2-sand)] outline-none transition-colors hover:text-[var(--g2-gold)] focus-visible:text-[var(--g2-gold)]" href="{% url 'property_list' %}?listing_type=rent" style="font-size: clamp(1.5rem, min(2.4vw, 4.4vh), 2.4rem); font-weight: 300;">Residences for lease</a></li>
+            </ul>
+          </div>
+
+          <div class="mt-10 space-y-2 text-xs uppercase tracking-[0.14em] text-[var(--g2-sand-dim)] md:mt-[min(2.5rem,4vh)]" style="opacity: 1;">
+            {% if user.is_authenticated %}
+              <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;padding-bottom:0.65rem;">
+                <a href="{% url 'profile' %}" class="g2-nav text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" style="font-size:0.72rem;">Profile ({{ user.username }})</a>
+                {% if user.role == 'agent' or user.is_superuser or user.role == 'admin' %}
+                  <a href="{% url 'add_property' %}" class="g2-nav text-[var(--g2-gold)] hover:text-[var(--g2-sand)]" style="font-size:0.72rem;">+ List Property</a>
+                {% endif %}
+                <form method="POST" action="{% url 'logout' %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="g2-nav text-[var(--g2-sand-dim)] hover:text-[var(--g2-gold)]" style="font-size:0.72rem;background:transparent;border:0;padding:0;">Sign Out</button>
+                </form>
+              </div>
+            {% endif %}
+            <a href="mailto:hello@propnestrealestate.com" class="block normal-case tracking-normal transition-colors hover:text-[var(--g2-gold)]">hello@propnestrealestate.com</a>
+            <span class="block">Gulshan · Dhaka</span>
+          </div>
+        </nav>
+
+        <!-- Right 3D Cylindrical Gallery Canvas -->
+        <div class="relative order-first -mx-6 h-[34vh] md:order-none md:mx-0 md:h-[78vh]">
+          <div aria-hidden="true" class="pointer-events-none absolute inset-0 md:-left-[22%] md:-right-[22%]" style="mask-image: radial-gradient(50% 50%, rgb(0, 0, 0) 62%, transparent 100%); -webkit-mask-image: radial-gradient(50% 50%, rgb(0, 0, 0) 62%, transparent 100%);">
+            <canvas id="g2-menu-canvas" style="position: absolute; inset: 0px; width: 100%; height: 100%;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accessible Toast Stack -->
+    {% if messages %}
+      <div class="pn-toast-stack" role="region" aria-label="Notifications" aria-live="polite">
+        {% for message in messages %}
+          <div class="pn-toast" data-toast data-level="{% if 'error' in message.tags %}error{% elif 'warning' in message.tags %}warning{% elif 'success' in message.tags %}success{% else %}info{% endif %}">
+            <p style="font-size:0.88rem;line-height:1.45;margin:0;">{{ message }}</p>
+            <button type="button" data-toast-close aria-label="Dismiss notification" style="background:transparent;border:0;color:var(--g2-sand-dim);font-size:1.1rem;line-height:1;padding:0.1rem 0.25rem;">×</button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Main Document Body -->
+    <main id="main-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Editorial Architectural Footer (Exact Bordered Frame + Watermark Chevron) -->
+    <footer data-g2-section="footer" class="relative overflow-hidden bg-[var(--g2-ink-2)] [[data-g2-theme='dark']_&]:bg-[#061a2c] {% block footer_classes %}pt-16 md:pt-20{% endblock %}">
+      <svg aria-hidden="true" viewBox="0 0 500 380" class="pointer-events-none absolute -right-32 -top-40 h-[520px] w-[520px]" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="22">
+        <path d="M 60 280 L 250 90 L 440 280" stroke="rgba(235,88,24,0.06)"></path>
+        <path d="M 115 256 L 250 121 L 385 256" stroke="rgba(235,88,24,0.08)"></path>
+        <path d="M 170 232 L 250 152 L 330 232" stroke="rgba(235,88,24,0.10)"></path>
+      </svg>
+      <div class="relative mx-auto max-w-[1760px] px-4 pb-10 md:px-[4vw] md:pb-14">
+        <div class="rounded-[28px] border border-[var(--g2-line)] px-6 py-10 md:px-12 md:py-14">
+          <div class="grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-[1.5fr_1fr_1fr_1.1fr] md:gap-10">
+            <div class="col-span-2 md:col-span-1">
+              <a aria-label="PROPNEST REAL ESTATE — home" class="inline-block" href="{% url 'home' %}">
+                <svg viewBox="0 0 1940 480" class="h-9 w-auto md:h-10" role="img" aria-label="PropNest Real Estate">
+                  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="24">
+                    <path d="M 38 352 L 266 124 L 494 352" stroke="#5d332d"></path>
+                    <path d="M 104 326 L 266 164 L 428 326" stroke="#a04624"></path>
+                    <path d="M 170 300 L 266 204 L 362 300" stroke="#f05a1a"></path>
+                  </g>
+                  <g fill="var(--g2-lockup-type)" class="transition-[fill] duration-700" font-family="'golpo', system-ui, -apple-system, sans-serif">
+                    <text x="568" y="268" font-size="214" font-weight="400" letter-spacing="32">PROPNEST</text>
+                    <text x="576" y="376" font-size="54" font-weight="400" letter-spacing="84">REAL&#160;&#160;ESTATE</text>
+                  </g>
+                </svg>
+              </a>
+              <p class="mt-5 max-w-xs text-sm leading-relaxed text-[var(--g2-sand-dim)]">Transforming the future of living across prime urban neighborhoods.</p>
+              <a href="mailto:hello@propnestrealestate.com" class="group mt-7 flex w-full max-w-[320px] items-center gap-3 rounded-full border border-[var(--g2-line)] py-1.5 pl-5 pr-1.5 transition-colors hover:border-[var(--g2-gold)]">
+                <span class="min-w-0 flex-1 truncate text-sm text-[var(--g2-sand-dim)] transition-colors group-hover:text-[var(--g2-sand)]">hello@propnestrealestate.com</span>
+                <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition-transform duration-300 group-hover:translate-x-0.5" style="background:var(--g2-ember)" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                </span>
+              </a>
+            </div>
+
+            <nav aria-label="Signature Residences">
+              <p class="g2-kicker mb-5 text-[var(--g2-gold)]">Residences</p>
+              <ul class="space-y-3 text-[15px]">
+                {% for prop in nav_featured_properties %}
+                  <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'property_detail' prop.id %}">{{ prop.title }}</a></li>
+                {% empty %}
+                  <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'property_list' %}">All Flagship Listings</a></li>
+                {% endfor %}
+                <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'property_list' %}?listing_type=sale">Residences for Sale</a></li>
+                <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'property_list' %}?listing_type=rent">Residences for Lease</a></li>
+              </ul>
+            </nav>
+
+            <nav aria-label="Platform &amp; Portal">
+              <p class="g2-kicker mb-5 text-[var(--g2-gold)]">Company &amp; Portal</p>
+              <ul class="space-y-3 text-[15px]">
+                <li>
+                  <a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'about' %}">About PropNest</a>
+                  <a class="mt-3 block pl-4 text-[14px] text-[var(--g2-sand-dim)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'agent_list' %}">Our Advisory Team</a>
+                </li>
+                {% if user.is_authenticated %}
+                  <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'saved_properties' %}">Saved Residences ({{ saved_properties_count }})</a></li>
+                  <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'my_tours' %}">Scheduled Tours</a></li>
+                  {% if user.is_superuser or user.role == 'admin' %}
+                    <li><a class="text-[var(--g2-gold)] transition-colors hover:text-[var(--g2-sand)]" href="{% url 'admin_dashboard' %}">Admin Console</a></li>
+                  {% elif user.role == 'agent' %}
+                    <li><a class="text-[var(--g2-gold)] transition-colors hover:text-[var(--g2-sand)]" href="{% url 'agent_dashboard' %}">Advisor Studio</a></li>
+                  {% endif %}
+                {% else %}
+                  <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'login' %}">Client Sign In</a></li>
+                  <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'register' %}">Create Account</a></li>
+                {% endif %}
+                <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'contact' %}">Contact</a></li>
+              </ul>
+            </nav>
+
+            <div class="col-span-2 md:col-span-1">
+              <p class="g2-kicker mb-5 text-[var(--g2-gold)]">Contact</p>
+              <div class="space-y-3 text-[15px]">
+                <p><a href="tel:+8801337339933" class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]">Let’s Connect: +8801337339933</a></p>
+                <p class="max-w-[16rem] leading-relaxed text-[var(--g2-sand-dim)]">Level 04, Nasrin Casabella, 2/A Gulshan North Avenue, Dhaka 1212, Bangladesh</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-12 flex flex-col gap-4 border-t border-[var(--g2-line)] pt-6 text-xs text-[var(--g2-sand-dim)] sm:flex-row sm:items-center sm:justify-between">
+            <p>© {% now "Y" %} PROPNEST REAL ESTATE. All rights reserved</p>
+            <div class="flex items-center gap-6 text-[var(--g2-sand)]">
+              <a href="https://www.facebook.com" aria-label="PropNest Real Estate on Facebook" target="_blank" rel="noreferrer noopener" class="transition-colors hover:text-[var(--g2-gold)]"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.52 1.5-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.45 2.91h-2.33V22c4.78-.76 8.44-4.92 8.44-9.94Z"></path></svg></a>
+              <a href="https://www.linkedin.com" aria-label="PropNest Real Estate on LinkedIn" target="_blank" rel="noreferrer noopener" class="transition-colors hover:text-[var(--g2-gold)]"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9h4v12H3V9Zm7 0h3.8v1.64h.05c.53-.95 1.83-1.95 3.77-1.95 4.03 0 4.78 2.5 4.78 5.76V21h-4v-5.76c0-1.37-.03-3.14-1.98-3.14-1.98 0-2.28 1.5-2.28 3.04V21h-4V9Z"></path></svg></a>
+              <a href="https://www.instagram.com" aria-label="PropNest Real Estate on Instagram" target="_blank" rel="noreferrer noopener" class="transition-colors hover:text-[var(--g2-gold)]"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.8 3.8 0 0 1-1.38-.9 3.8 3.8 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16Zm0 3.18a6.66 6.66 0 1 0 0 13.32 6.66 6.66 0 0 0 0-13.32Zm0 10.98a4.32 4.32 0 1 1 0-8.64 4.32 4.32 0 0 1 0 8.64Zm8.48-11.24a1.56 1.56 0 1 1-3.11 0 1.56 1.56 0 0 1 3.11 0Z"></path></svg></a>
+              <a href="https://www.youtube.com" aria-label="PropNest Real Estate on YouTube" target="_blank" rel="noreferrer noopener" class="transition-colors hover:text-[var(--g2-gold)]"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M21.58 7.19a2.51 2.51 0 0 0-1.77-1.78C18.25 5 12 5 12 5s-6.25 0-7.81.41a2.51 2.51 0 0 0-1.77 1.78A26.2 26.2 0 0 0 2 12a26.2 26.2 0 0 0 .42 4.81 2.51 2.51 0 0 0 1.77 1.78C5.75 19 12 19 12 19s6.25 0 7.81-.41a2.51 2.51 0 0 0 1.77-1.78A26.2 26.2 0 0 0 22 12a26.2 26.2 0 0 0-.42-4.81ZM10 15.02V8.98L15.2 12 10 15.02Z"></path></svg></a>
+              <a href="https://x.com" aria-label="PropNest Real Estate on X" target="_blank" rel="noreferrer noopener" class="transition-colors hover:text-[var(--g2-gold)]"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z"></path></svg></a>
+            </div>
+          </div>
+        </div>
       </div>
     </footer>
 
-    <script src="{% static 'app.js' %}"></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-      crossorigin="anonymous"
-    ></script>
-  </body>
+    <!-- Floating WhatsApp Concierge Action -->
+    <a href="https://wa.me/8801337339933" target="_blank" rel="noreferrer noopener" aria-label="Chat with PropNest Real Estate on WhatsApp" class="fixed bottom-5 right-5 z-[55] grid h-12 w-12 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_6px_24px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-[1.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:bottom-8 md:right-8 md:h-14 md:w-14">
+      <svg viewBox="0 0 24 24" class="h-6 w-6 md:h-7 md:w-7" fill="currentColor" aria-hidden="true">
+        <path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.05-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.75-.72 2-1.41.25-.69.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35ZM12.05 21.5h-.01a9.45 9.45 0 0 1-4.82-1.32l-.35-.21-3.58.94.96-3.49-.23-.36a9.43 9.43 0 0 1-1.45-5.03c0-5.22 4.25-9.47 9.48-9.47a9.4 9.4 0 0 1 6.7 2.78 9.41 9.41 0 0 1 2.77 6.7c0 5.22-4.25 9.46-9.47 9.46Zm8.06-17.53A11.32 11.32 0 0 0 12.05.63C5.77.63.66 5.74.66 12.02c0 2 .52 3.96 1.52 5.69L.57 23.6l6.02-1.58a11.36 11.36 0 0 0 5.45 1.39h.01c6.28 0 11.39-5.11 11.39-11.39 0-3.04-1.19-5.9-3.33-8.05Z"></path>
+      </svg>
+    </a>
+
+    <!-- Universal Native <dialog> Confirmation Modal -->
+    <dialog id="pn-confirm-dialog" class="pn-dialog" closedby="any" aria-labelledby="pn-confirm-title">
+      <div class="pn-stack-md">
+        <div class="pn-row-between">
+          <p class="pn-kicker" style="margin:0;">Confirmation Required</p>
+          <button type="button" data-close-dialog aria-label="Close modal" style="background:transparent;border:0;color:var(--g2-sand-dim);font-size:1.35rem;line-height:1;">×</button>
+        </div>
+        <h2 id="pn-confirm-title" data-confirm-title class="pn-h3" style="margin:0;">Confirm Action</h2>
+        <p data-confirm-body class="pn-muted" style="margin:0;">Are you sure you want to proceed with this action?</p>
+
+        <form method="POST" action="" data-confirm-form class="pn-stack-md">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <div data-confirm-note-wrap hidden class="pn-field" style="margin:0;">
+            <label for="pn-confirm-note-input" class="pn-label">Advisor Note (Optional)</label>
+            <textarea id="pn-confirm-note-input" name="agent_message" data-confirm-note class="pn-textarea" rows="3" placeholder="Add arrival instructions or reschedule note for the buyer..."></textarea>
+          </div>
+          <div class="pn-row" style="justify-content:flex-end;">
+            <button type="button" data-close-dialog class="pn-btn pn-btn-sm">Cancel</button>
+            <button type="submit" data-confirm-submit class="pn-btn pn-btn-danger">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Native <dialog> Property Lightbox Gallery Modal -->
+    <dialog id="pn-lightbox-dialog" class="pn-dialog pn-dialog-wide" closedby="any" aria-label="Property gallery viewer">
+      <div class="pn-stack-md">
+        <div class="pn-row-between">
+          <span data-lightbox-counter class="pn-kicker">1 / 1</span>
+          <button type="button" data-close-dialog class="pn-btn pn-btn-sm">Close Esc</button>
+        </div>
+        <div style="border-radius:16px;overflow:hidden;background:var(--g2-ink);max-height:70vh;display:flex;align-items:center;justify-content:center;">
+          <img data-lightbox-img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Residence preview" style="max-width:100%;max-height:70vh;object-fit:contain;">
+        </div>
+        <div class="pn-row-between">
+          <button type="button" data-lightbox-prev class="pn-btn pn-btn-sm">← Previous View</button>
+          <button type="button" data-lightbox-next class="pn-btn pn-btn-sm">Next View →</button>
+        </div>
+      </div>
+    </dialog>
+
+    {% block extra_modals %}{% endblock %}
+  </div>
+
+  <script type="module" src="{% static 'js/propnest-engine.js' %}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
 </html>

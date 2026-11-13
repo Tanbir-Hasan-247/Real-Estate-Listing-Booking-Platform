@@ -1,0 +1,73 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Contact Inquiries — Admin Console — PropNest{% endblock %}
+
+{% block admin_content %}
+<div class="pn-row-between" style="align-items:flex-end;">
+  <div>
+    <p class="pn-kicker">Concierge Inbox</p>
+    <h1 class="pn-h1" style="margin:0.35rem 0 0;font-size:clamp(1.9rem, 3.4vw, 2.9rem);">Client Inquiries</h1>
+  </div>
+  <div class="pn-tabs">
+    <a href="?status=all" class="pn-tab {% if filter_status == 'all' or not filter_status %}is-active{% endif %}">All</a>
+    <a href="?status=open" class="pn-tab {% if filter_status == 'open' %}is-active{% endif %}">Open</a>
+    <a href="?status=resolved" class="pn-tab {% if filter_status == 'resolved' %}is-active{% endif %}">Resolved</a>
+  </div>
+</div>
+
+{% if inquiries %}
+  <div class="pn-table-wrap pn-native-cursor">
+    <table class="pn-table">
+      <thead>
+        <tr>
+          <th>Sender</th>
+          <th>Subject &amp; Message</th>
+          <th>Residence</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inq in inquiries %}
+          <tr>
+            <td data-label="Sender">
+              <div style="font-weight:600;">{{ inq.name }}</div>
+              <div class="pn-muted" style="font-size:0.78rem;">{{ inq.email }}</div>
+              {% if inq.phone %}<div class="pn-muted" style="font-size:0.78rem;">{{ inq.phone }}</div>{% endif %}
+            </td>
+            <td data-label="Subject">
+              <div style="font-weight:600;">{{ inq.subject }}</div>
+              <p class="pn-muted" style="margin:0.25rem 0 0;font-size:0.84rem;max-width:44ch;">{{ inq.message }}</p>
+              <span class="pn-muted" style="font-size:0.74rem;">Received {{ inq.created_at|date:"M d, Y H:i" }}</span>
+            </td>
+            <td data-label="Residence">
+              {% if inq.property %}
+                <a href="{% url 'property_detail' inq.property.id %}" class="no-underline text-[var(--g2-gold)]">{{ inq.property.title }}</a>
+              {% else %}
+                <span class="pn-muted">General</span>
+              {% endif %}
+            </td>
+            <td data-label="Status">
+              <span class="pn-badge {% if inq.is_resolved %}pn-badge-confirmed{% else %}pn-badge-pending{% endif %}">
+                {% if inq.is_resolved %}Resolved{% else %}Open{% endif %}
+              </span>
+            </td>
+            <td data-label="Action">
+              <form method="POST" action="{% url 'admin_toggle_inquiry' inq.id %}">
+                {% csrf_token %}
+                <button type="submit" class="pn-btn pn-btn-sm {% if not inq.is_resolved %}pn-btn-primary{% endif %}">
+                  {% if inq.is_resolved %}Reopen{% else %}Mark Resolved{% endif %}
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="pn-empty-state">
+    <p class="pn-muted">No inquiries found for this filter.</p>
+  </div>
+{% endif %}
+{% endblock %}

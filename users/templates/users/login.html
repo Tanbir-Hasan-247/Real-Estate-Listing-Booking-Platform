@@ -1,27 +1,157 @@
 {% extends "base.html" %}
 
-{% block title %}User Login{% endblock %}
+{% block title %}Sign In — PropNest Real Estate{% endblock %}
 
 {% block content %}
-        <div class="flex-grow flex items-center justify-center py-10">
-            <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md border">
-                <h2 class="text-2xl text-center font-bold text-gray-800 mb-4">Login</h2>
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="mb-4">
-                        {{ form.as_p }}
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition">
-                            Login
-                        </button>
-                    </div>
-                    <div class="mt-2 text-center">
-                        <span class="text-sm text-gray-600">
-                            Don't have an account? <a href="{% url 'register' %}" class="text-indigo-600 hover:underline">Sign up</a>
-                        </span>
-                    </div>
-                </form>
+<div class="pn-page">
+  <div class="pn-container">
+    <div class="pn-auth-wrap pn-stack-md">
+      <div class="pn-stack-xs" style="text-align:center;">
+        <p class="pn-kicker">Client &amp; Advisor Access</p>
+        <h1 id="login-heading" class="pn-h1" style="margin:0;font-size:clamp(2.2rem, 4vw, 3.3rem);">Welcome back.</h1>
+        <p class="pn-muted">Sign in to explore PropNest — or click any demo role below to auto-fill credentials and tour every dashboard.</p>
+      </div>
+
+      <section class="pn-card" style="padding:clamp(1.6rem, 4vw, 2.5rem);">
+        <form id="pn-login-form" method="POST" action="{% url 'login' %}" aria-labelledby="login-heading" class="pn-validated-form pn-native-cursor" novalidate>
+          {% csrf_token %}
+          {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+          {% if form.non_field_errors %}
+            <div class="pn-alert pn-alert-error" style="margin-bottom:1.25rem;" role="alert">
+              {{ form.non_field_errors }}
             </div>
+          {% endif %}
+
+          <div class="pn-field">
+            <label for="{{ form.username.id_for_label }}" class="pn-label">Username or Email <span aria-hidden="true">*</span></label>
+            {{ form.username }}
+            <span id="err-login-user" class="pn-error-msg">Please enter your username or email.</span>
+            {% if form.username.errors %}<ul class="pn-server-errors">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <div class="pn-field">
+            <div class="pn-row-between">
+              <label for="{{ form.password.id_for_label }}" class="pn-label">Password <span aria-hidden="true">*</span></label>
+              <a href="{% url 'password_reset' %}" class="g2-nav text-[var(--g2-gold)] no-underline" style="font-size:0.65rem;">Forgot Password?</a>
+            </div>
+            <div class="pn-pw-wrap">
+              {{ form.password }}
+              <button type="button" class="pn-pw-btn" data-password-toggle="{{ form.password.id_for_label }}" aria-pressed="false" aria-label="Show password">
+                <span data-pw-label>Show</span>
+              </button>
+            </div>
+            <span id="err-login-pw" class="pn-error-msg">Please enter your password.</span>
+            {% if form.password.errors %}<ul class="pn-server-errors">{% for e in form.password.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <button id="pn-login-submit" type="submit" class="pn-btn pn-btn-primary w-full" style="margin-top:0.5rem;">Sign In to PropNest →</button>
+        </form>
+
+        {% if demo_accounts %}
+          <div class="pn-demo-box pn-native-cursor">
+            <fieldset class="pn-demo-fieldset">
+              <legend class="pn-demo-legend">Instant Demo Tour — Click to Auto-Fill</legend>
+              <div class="pn-demo-grid">
+                {% for acc in demo_accounts %}
+                  <button type="button"
+                          class="pn-demo-card"
+                          data-demo-card
+                          data-demo-username="{{ acc.username }}"
+                          data-demo-password="{{ acc.password }}"
+                          data-demo-label="{{ acc.label }}"
+                          aria-pressed="false"
+                          aria-describedby="demo-fill-status">
+                    <div class="pn-demo-card-head">
+                      <span class="pn-demo-role">{{ acc.short_role }}</span>
+                      <span class="pn-demo-pill" data-demo-pill>Fill →</span>
+                    </div>
+                    <div class="pn-demo-creds">
+                      <span class="pn-demo-cred-line">
+                        <span>ID</span>
+                        <span class="pn-demo-cred-val">{{ acc.username }}</span>
+                      </span>
+                      <span class="pn-demo-cred-line">
+                        <span>PW</span>
+                        <span class="pn-demo-cred-val">{{ acc.password }}</span>
+                      </span>
+                    </div>
+                    <p class="pn-demo-desc">{{ acc.summary }}</p>
+                  </button>
+                {% endfor %}
+              </div>
+            </fieldset>
+            <p id="demo-fill-status" class="pn-demo-status" role="status" aria-live="polite">
+              Click Admin, Agent, or Client above to populate the login form, then press Sign In.
+            </p>
+          </div>
+        {% endif %}
+
+        <hr class="pn-divider">
+
+        <div class="pn-stack-sm" style="text-align:center;">
+          <p class="pn-muted" style="margin:0;font-size:0.86rem;">New to PropNest Real Estate?</p>
+          <div class="pn-row" style="justify-content:center;">
+            <a href="{% url 'register' %}" class="pn-btn pn-btn-sm">Create Buyer Account</a>
+            <a href="{% url 'register' %}?role=agent" class="pn-btn pn-btn-sm pn-btn-secondary">Register as Advisor</a>
+          </div>
+          <a href="{% url 'resend_activation' %}" class="pn-muted hover:text-[var(--g2-gold)] no-underline" style="font-size:0.8rem;margin-top:0.25rem;">Need a new activation email?</a>
         </div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (() => {
+    const u = document.getElementById('{{ form.username.id_for_label }}');
+    const p = document.getElementById('{{ form.password.id_for_label }}');
+    const submitBtn = document.getElementById('pn-login-submit');
+    const statusEl = document.getElementById('demo-fill-status');
+    const demoCards = Array.from(document.querySelectorAll('[data-demo-card]'));
+
+    if (u) {
+      u.classList.add('pn-input');
+      u.setAttribute('data-error', 'err-login-user');
+    }
+    if (p) {
+      p.classList.add('pn-input');
+      p.setAttribute('data-error', 'err-login-pw');
+    }
+
+    demoCards.forEach(card => {
+      card.addEventListener('click', () => {
+        const username = card.dataset.demoUsername || '';
+        const password = card.dataset.demoPassword || '';
+        const roleLabel = card.dataset.demoLabel || 'Demo';
+
+        if (u) {
+          u.value = username;
+          u.setCustomValidity('');
+          u.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (p) {
+          p.value = password;
+          p.setCustomValidity('');
+          p.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        demoCards.forEach(other => {
+          const isCurrent = other === card;
+          other.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
+          const pill = other.querySelector('[data-demo-pill]');
+          if (pill) pill.textContent = isCurrent ? '✓ Filled' : 'Fill →';
+        });
+
+        if (statusEl) {
+          statusEl.textContent = `${roleLabel} credentials filled (${username}). Click "Sign In to PropNest →" to explore.`;
+          statusEl.classList.add('is-active');
+        }
+        if (submitBtn) submitBtn.classList.add('is-ready');
+      });
+    });
+  })();
+</script>
 {% endblock %}

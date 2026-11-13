@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Private Concierge &amp; Contact — PropNest Real Estate{% endblock %}
+
+{% block content %}
+<div class="pn-page">
+  <div class="pn-container pn-stack-lg">
+    <div style="max-width:48rem;">
+      <p class="pn-kicker">Concierge Desk</p>
+      <h1 class="pn-h1" style="margin:0.45rem 0 0.75rem;">Begin a conversation with our advisory team.</h1>
+      <p class="pn-lead">Whether inquiring about a specific residence, off-market valuations, or joining PropNest as an advisor, send us a direct note below.</p>
+    </div>
+
+    <div class="pn-grid-split">
+      <!-- Accessible Contact Form -->
+      <section class="pn-card" style="padding:clamp(1.5rem, 4vw, 2.5rem);">
+        <form method="POST" action="{% url 'contact' %}" class="pn-validated-form pn-native-cursor" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="pn-alert pn-alert-error" style="margin-bottom:1.25rem;">
+              {{ form.non_field_errors }}
+            </div>
+          {% endif %}
+
+          <div class="pn-grid-2">
+            <div class="pn-field">
+              <label for="{{ form.name.id_for_label }}" class="pn-label">Full Name *</label>
+              {{ form.name }}
+              <span id="err-contact-name" class="pn-error-msg">Please enter your full name.</span>
+              {% if form.name.errors %}<ul class="pn-server-errors">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+
+            <div class="pn-field">
+              <label for="{{ form.email.id_for_label }}" class="pn-label">Email Address *</label>
+              {{ form.email }}
+              <span id="err-contact-email" class="pn-error-msg">Please enter a valid email address.</span>
+              {% if form.email.errors %}<ul class="pn-server-errors">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+          </div>
+
+          <div class="pn-grid-2">
+            <div class="pn-field">
+              <label for="{{ form.phone.id_for_label }}" class="pn-label">Phone Number</label>
+              {{ form.phone }}
+              {% if form.phone.errors %}<ul class="pn-server-errors">{% for e in form.phone.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+
+            <div class="pn-field">
+              <label for="{{ form.subject.id_for_label }}" class="pn-label">Subject *</label>
+              {{ form.subject }}
+              <span id="err-contact-subject" class="pn-error-msg">Please specify an inquiry subject.</span>
+              {% if form.subject.errors %}<ul class="pn-server-errors">{% for e in form.subject.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+          </div>
+
+          <div class="pn-field">
+            <label for="{{ form.property.id_for_label }}" class="pn-label">Regarding Residence (Optional)</label>
+            {{ form.property }}
+            {% if form.property.errors %}<ul class="pn-server-errors">{% for e in form.property.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <div class="pn-field">
+            <label for="{{ form.message.id_for_label }}" class="pn-label">Message *</label>
+            <span class="pn-hint">Include preferred viewing dates, neighborhood requirements, or timeline details.</span>
+            {{ form.message }}
+            <span id="err-contact-msg" class="pn-error-msg">Please enter your message.</span>
+            {% if form.message.errors %}<ul class="pn-server-errors">{% for e in form.message.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <!-- Spam Honeypot (hidden visually) -->
+          <div class="visually-hidden" aria-hidden="true">
+            <label for="{{ form.website.id_for_label }}">Website</label>
+            {{ form.website }}
+          </div>
+
+          <button type="submit" class="pn-btn pn-btn-primary">Send Inquiry to PropNest →</button>
+        </form>
+      </section>
+
+      <!-- Studio Address & Direct Channels -->
+      <aside class="pn-stack-md">
+        <div class="pn-card pn-stack-md" style="padding:1.75rem;">
+          <p class="pn-kicker" style="margin:0;">Flagship Studio</p>
+          <h2 class="pn-h3" style="margin:0;">Dhaka Architectural Atelier</h2>
+          <p class="pn-muted" style="margin:0;">House 44, Road 11, Banani<br>Dhaka 1213, Bangladesh</p>
+          <hr class="pn-divider" style="margin-block:0.5rem;">
+          <div class="pn-stack-xs">
+            <span class="pn-kicker" style="font-size:0.64rem;">Direct Line</span>
+            <a href="tel:+8801337339933" class="pn-h3 no-underline hover:text-[var(--g2-gold)]">+880 1337 339933</a>
+          </div>
+          <div class="pn-stack-xs">
+            <span class="pn-kicker" style="font-size:0.64rem;">Concierge Email</span>
+            <a href="mailto:concierge@propnest.com" class="pn-h3 no-underline hover:text-[var(--g2-gold)]">concierge@propnest.com</a>
+          </div>
+          <div class="pn-stack-xs">
+            <span class="pn-kicker" style="font-size:0.64rem;">Studio Hours</span>
+            <span class="pn-muted">Sat – Thu: 10:00 AM – 7:30 PM</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (() => {
+    const map = [
+      ['{{ form.name.id_for_label }}', 'err-contact-name'],
+      ['{{ form.email.id_for_label }}', 'err-contact-email'],
+      ['{{ form.subject.id_for_label }}', 'err-contact-subject'],
+      ['{{ form.message.id_for_label }}', 'err-contact-msg']
+    ];
+    map.forEach(([id, errId]) => {
+      const el = document.getElementById(id);
+      if (el) el.setAttribute('data-error', errId);
+    });
+  })();
+</script>
+{% endblock %}

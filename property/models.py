@@ -1,9 +1,28 @@
+import builtins
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.templatetags.static import static
 from cloudinary.models import CloudinaryField
 
 # Create your models here.
 User = get_user_model()
+
+FALLBACK_ARCH_IMAGES = (
+    "assets/menu-0.avif",
+    "assets/menu-1.avif",
+    "assets/menu-2.avif",
+    "assets/menu-3.avif",
+    "assets/menu-4.avif",
+    "assets/menu-5.avif",
+)
+
+
+def is_placeholder_image(field_value):
+    """Return True if a CloudinaryField value is missing or the dead seeded default.png placeholder."""
+    if not field_value:
+        return True
+    raw = str(getattr(field_value, "public_id", None) or field_value or "")
+    return (not raw.strip()) or raw.strip().endswith("default.png") or raw.strip().endswith("/default")
 
 class PropertyType(models.Model):
     CHOICE = [
@@ -56,6 +75,18 @@ class Property(models.Model):
     
     def __str__(self):
         return self.title
+
+    @property
+    def primary_image_url(self):
+        """Return the first real image URL or a curated local architectural fallback."""
+        for img in self.images.all():
+            if not is_placeholder_image(img.image):
+                try:
+                    return img.image.url
+                except Exception:
+                    pass
+        idx = (self.id or 0) % len(FALLBACK_ARCH_IMAGES)
+        return static(FALLBACK_ARCH_IMAGES[idx])
     
     
 class PropertyImage(models.Model):
@@ -64,6 +95,17 @@ class PropertyImage(models.Model):
     
     def __str__(self):
         return f"Image for {self.property.title}"
+
+    @builtins.property
+    def safe_url(self):
+        """Return uploaded Cloudinary image URL unless placeholder default.png, else architectural fallback."""
+        if not is_placeholder_image(self.image):
+            try:
+                return self.image.url
+            except Exception:
+                pass
+        idx = ((self.property_id or 0) + (self.id or 0)) % len(FALLBACK_ARCH_IMAGES)
+        return static(FALLBACK_ARCH_IMAGES[idx])
     
     
 class TourBooking(models.Model):
@@ -103,3 +145,33 @@ class SavedProperty(models.Model):
 
     def __str__(self):
         return f"{self.user.username} saved {self.property.title}"
+
+
+class ContactMessage(models.Model):
+    name = models.CharField(max_length=120)
+    email = models.EmailField()
+    phone = models.CharField(max_length=30, blank=True)
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='inquiries',
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='inquiries',
+    )
+    is_resolved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.subject} — {self.name}"

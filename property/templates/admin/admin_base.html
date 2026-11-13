@@ -1,157 +1,69 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %} Admin Panel - PropNest {% endblock %}</title>
-    
-    <link rel="stylesheet" href="{% static 'style.css' %}" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  
-  <body class="bg-white flex flex-col min-h-screen">
-    
-    <header class="bg-white shadow-sm border-b fixed top-0 left-0 w-full z-50 h-[68px]">
-        <div class="px-4 md:px-6 h-full flex justify-between items-center w-full">
-            
-            <div class="flex items-center gap-4">
-                <button class="md:hidden text-gray-500 focus:outline-none">
-                    <i class="fa-solid fa-bars text-xl"></i>
-                </button>
-                
-                <a href="/" class="text-2xl font-bold text-indigo-600 flex items-center gap-2 text-decoration-none">
-                    <i class="fa-solid fa-house-chimney"></i>
-                    <span>PropNest <span class="text-sm text-gray-400 font-medium ml-1 hidden sm:inline">| Admin Panel</span></span>
-                </a>
-            </div>
+{% extends "base.html" %}
 
-            <nav class="hidden md:flex space-x-6 text-gray-600 font-medium">
-                <a href="{% url 'home' %}" class="hover:text-indigo-600 transition text-decoration-none">Main Site</a>
-                <a href="{% url 'property_list' %}" class="hover:text-indigo-600 transition text-decoration-none">Browse Properties</a>
-            </nav>
-
-            <div class="flex items-center space-x-4">
-                {% if request.user.is_authenticated %}
-                    <div class="dropdown">
-                        <button class="flex items-center gap-2 text-gray-700 hover:text-indigo-600 focus:outline-none border-0 bg-transparent" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            
-                            <div class="w-10 h-10 rounded-full bg-indigo-100 flex justify-center items-center text-indigo-600 font-bold overflow-hidden border-2 border-indigo-200 shadow-sm">
-                                {% if request.user.profile %}
-                                    <img src="{{ request.user.profile.url }}" class="w-full h-full object-cover" alt="Profile">
-                                {% else %}
-                                    <span class="text-sm tracking-wide">
-                                        {% if request.user.first_name and request.user.last_name %}
-                                            {{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}
-                                        {% else %}
-                                            {{ request.user.username|first|upper }}
-                                        {% endif %}
-                                    </span>
-                                {% endif %}
-                            </div>
-                            
-                            <span class="font-semibold hidden sm:block">{{ request.user.username }}</span>
-                            <i class="fa-solid fa-chevron-down text-xs text-gray-400 ml-1"></i>
-                        </button>
-                        
-                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 rounded-lg min-w-[200px]">
-                            <li>
-                                <div class="px-4 py-2 border-b border-gray-100 mb-1">
-                                    <p class="text-sm font-bold text-gray-800 mb-0">{{ request.user.username }}</p>
-                                    <p class="text-xs text-indigo-600 font-medium mb-0 capitalize">Administrator</p>
-                                </div>
-                            </li>
-                            <li>
-                                <a class="dropdown-item py-2 text-gray-700 hover:bg-gray-50 flex items-center" href="#">
-                                    <i class="fa-regular fa-id-badge mr-3 text-indigo-500 w-4"></i> My Profile
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider my-1"></li>
-                            <li>
-                                <form method="post" action="{% url 'logout' %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="dropdown-item py-2 text-red-600 hover:bg-red-50 font-medium flex items-center w-full text-left">
-                                        <i class="fa-solid fa-arrow-right-from-bracket mr-3 w-4"></i> Logout
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
-                {% endif %}
-            </div>
+{% block content %}
+<div class="pn-page">
+  <div class="pn-container">
+    <div class="pn-dash-layout">
+      <!-- Admin Operations Sidebar -->
+      <aside class="pn-sidebar pn-stack-md pn-native-cursor" aria-label="Administrator console navigation">
+        <div class="pn-row" style="gap:0.85rem;">
+          {% if user.profile %}
+            <img src="{{ user.profile.url }}" alt="{{ user.get_full_name|default:user.username }}" class="pn-avatar">
+          {% else %}
+            <span class="pn-avatar pn-avatar-initials">{{ user.username|slice:":2"|upper }}</span>
+          {% endif %}
+          <div>
+            <p class="pn-kicker" style="margin:0;font-size:0.62rem;">Admin Operations</p>
+            <p class="pn-h3" style="margin:0.15rem 0 0;font-size:1.05rem;">{{ user.get_full_name|default:user.username }}</p>
+          </div>
         </div>
-    </header>
 
-    <div class="flex flex-col md:flex-row flex-grow w-full pt-[68px]">
-        
-        <aside class="w-full md:w-64 bg-white border-r border-gray-100 flex-shrink-0 md:fixed md:top-[68px] md:left-0 h-auto md:h-[calc(100vh-68px)] overflow-y-auto z-40 custom-scrollbar">
-            <div class="p-6">
-                
-                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Dashboard</h2>
-                <nav class="space-y-1.5 mb-8">
-                    <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 px-4 py-3 {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-indigo-50 text-indigo-700 rounded-lg font-bold transition text-decoration-none border border-indigo-100 shadow-sm{% else %}text-gray-600 hover:bg-indigo-50 hover:text-indigo-700{% endif %}">
-                        <i class="fa-solid fa-chart-line w-5 text-center text-lg"></i> Overview
-                    </a>
-                </nav>
+        <nav class="pn-stack-xs">
+          {% with url_name=request.resolver_match.url_name %}
+            <a href="{% url 'admin_dashboard' %}" class="pn-sidebar-link {% if url_name == 'admin_dashboard' %}is-active{% endif %}">
+              <span>Executive Console</span>
+            </a>
+            <a href="{% url 'admin_property_list' %}" class="pn-sidebar-link {% if url_name == 'admin_property_list' or url_name == 'edit_property' %}is-active{% endif %}">
+              <span>All Properties</span>
+            </a>
+            <a href="{% url 'add_property' %}" class="pn-sidebar-link {% if url_name == 'add_property' %}is-active{% endif %}">
+              <span>+ Publish Property</span>
+            </a>
+            <a href="{% url 'admin_property_types' %}" class="pn-sidebar-link {% if url_name == 'admin_property_types' %}is-active{% endif %}">
+              <span>Property Types</span>
+            </a>
+            <a href="{% url 'admin_user_list' %}" class="pn-sidebar-link {% if url_name == 'admin_user_list' %}is-active{% endif %}">
+              <span>User Directory</span>
+            </a>
+            <a href="{% url 'admin_agent_list' %}" class="pn-sidebar-link {% if url_name == 'admin_agent_list' %}is-active{% endif %}">
+              <span>Licensed Advisors</span>
+            </a>
+            <a href="{% url 'admin_tour_requests' %}" class="pn-sidebar-link {% if url_name == 'admin_tour_requests' %}is-active{% endif %}">
+              <span>All Tour Requests</span>
+              {% if pending_admin_tours_count %}<span class="pn-badge pn-badge-ember">{{ pending_admin_tours_count }}</span>{% endif %}
+            </a>
+            <a href="{% url 'admin_inquiries' %}" class="pn-sidebar-link {% if url_name == 'admin_inquiries' %}is-active{% endif %}">
+              <span>Contact Inquiries</span>
+              {% if unresolved_inquiries_count %}<span class="pn-badge pn-badge-ember">{{ unresolved_inquiries_count }}</span>{% endif %}
+            </a>
+            <hr class="pn-divider" style="margin-block:0.5rem;">
+            <a href="{% url 'admin_export_report' %}" class="pn-sidebar-link" style="color:var(--g2-gold);">
+              <span>Export CSV Report ↓</span>
+            </a>
+            <a href="{% url 'profile' %}" class="pn-sidebar-link">
+              <span>Account Settings</span>
+            </a>
+          {% endwith %}
+        </nav>
+      </aside>
 
-                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Properties</h2>
-                <nav class="space-y-1.5 mb-8">
-                    <a href="{% url 'admin_property_list' %}" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg font-medium transition text-decoration-none group">
-                        <div class="w-8 h-8 rounded bg-gray-100 group-hover:bg-white flex items-center justify-center transition">
-                            <i class="fa-solid fa-building text-gray-500 group-hover:text-indigo-600"></i>
-                        </div>
-                        All Properties
-                    </a>
-                    <a href="{% url 'admin_property_types' %}" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg font-medium transition text-decoration-none group">
-                        <div class="w-8 h-8 rounded bg-gray-100 group-hover:bg-white flex items-center justify-center transition">
-                            <i class="fa-solid fa-list-check text-gray-500 group-hover:text-indigo-600"></i>
-                        </div>
-                        Property Types
-                    </a>
-                </nav>
-
-                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Users</h2>
-                <nav class="space-y-1.5 mb-8">
-                    <a href="{% url 'admin_user_list' %}" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg font-medium transition text-decoration-none group">
-                        <div class="w-8 h-8 rounded bg-gray-100 group-hover:bg-white flex items-center justify-center transition">
-                            <i class="fa-solid fa-users text-gray-500 group-hover:text-indigo-600"></i>
-                        </div>
-                        All Users
-                    </a>
-                    <a href="{% url 'admin_agent_list' %}" class="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg font-medium transition text-decoration-none group">
-                        <div class="w-8 h-8 rounded bg-gray-100 group-hover:bg-white flex items-center justify-center transition">
-                            <i class="fa-solid fa-user-tie text-gray-500 group-hover:text-indigo-600"></i>
-                        </div>
-                        Manage Agents
-                    </a>
-                </nav>
-
-                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Operations</h2>
-                <nav class="space-y-1.5">
-                    <a href="{% url 'admin_tour_requests' %}" class="flex items-center justify-between px-4 py-2.5 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg font-medium transition text-decoration-none group">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded bg-gray-100 group-hover:bg-white flex items-center justify-center transition">
-                                <i class="fa-solid fa-calendar-check text-gray-500 group-hover:text-indigo-600"></i>
-                            </div>
-                            All Tour Requests
-                        </div>
-                        <span class="bg-indigo-100 text-indigo-600 text-xs font-bold px-2 py-0.5 rounded-full border border-indigo-200 shadow-sm">12</span>
-                    </a>
-                </nav>
-                
-            </div>
-        </aside>
-
-        <main class="flex-1 w-full bg-gray-50 md:ml-64">
-            {% block admin_content %}
-            {% endblock %}
-        </main>
-        
+      <!-- Main Admin Workspace -->
+      <section class="pn-stack-lg">
+        {% block portal_content %}
+          {% block admin_content %}{% endblock %}
+        {% endblock %}
+      </section>
     </div>
-
-    <script src="{% static 'app.js' %}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-  </body>
-</html>
+  </div>
+</div>
+{% endblock %}

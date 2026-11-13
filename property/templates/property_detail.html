@@ -1,329 +1,328 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}{{ property.title }} - PropNest{% endblock %}
+{% block title %}{{ property.title }} — PropNest Real Estate{% endblock %}
 
 {% block content %}
-<div class="bg-gray-50 min-h-screen pb-16">
-    
-    <div class="max-w-7xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <nav class="text-sm font-medium text-gray-500">
-            {% if request.user == property.agent or request.user.is_superuser %}
-            <a href="{% url 'home' %}" class="hover:text-indigo-600 text-decoration-none">Dashboard</a>
+<div class="pn-page">
+  <div class="pn-container pn-stack-lg">
+    <!-- Breadcrumb & Header Summary -->
+    <nav aria-label="Breadcrumb" class="pn-row" style="font-size:0.82rem;color:var(--g2-sand-dim);">
+      <a href="{% url 'home' %}" class="no-underline text-[var(--g2-sand-dim)] hover:text-[var(--g2-gold)]">Home</a>
+      <span>/</span>
+      <a href="{% url 'property_list' %}" class="no-underline text-[var(--g2-sand-dim)] hover:text-[var(--g2-gold)]">Residences</a>
+      <span>/</span>
+      <span style="color:var(--g2-sand);">{{ property.title }}</span>
+    </nav>
+
+    <div class="pn-row-between" style="align-items:flex-end;">
+      <div class="pn-stack-xs">
+        <div class="pn-row">
+          <span class="pn-badge pn-badge-ember">{{ property.get_listing_type_display }}</span>
+          <span class="pn-badge {% if property.status == 'available' %}pn-badge-available{% elif property.status == 'sold' %}pn-badge-sold{% else %}pn-badge-rented{% endif %}">
+            {{ property.get_status_display }}
+          </span>
+          <span class="pn-badge">{{ property.property_type.name }}</span>
+          {% if property.is_featured %}<span class="pn-badge" style="background:var(--g2-ember);color:#fff;border-color:var(--g2-ember);">Featured</span>{% endif %}
+        </div>
+        <h1 class="pn-h1" style="margin:0.35rem 0 0;">{{ property.title }}</h1>
+        <p class="pn-lead" style="margin:0;">{{ property.location }}, {{ property.city }}{% if property.state %}, {{ property.state }}{% endif %}</p>
+      </div>
+
+      <div class="pn-stack-sm" style="align-items:flex-end;">
+        <p class="g2-display" style="margin:0;font-size:clamp(2rem, 3.8vw, 3.25rem);color:var(--g2-gold);font-variant-numeric:tabular-nums;">
+          ${{ property.price|floatformat:0 }}{% if property.listing_type == 'rent' %}<span style="font-size:1rem;color:var(--g2-sand-dim);">/mo</span>{% endif %}
+        </p>
+
+        <div class="pn-row">
+          {% if user.is_authenticated %}
+            <form method="POST" action="{% url 'save_property' property.id %}" data-ajax-save>
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" aria-pressed="{% if is_saved %}true{% else %}false{% endif %}" class="pn-btn pn-btn-sm {% if is_saved %}pn-btn-primary{% endif %}">
+                <span data-save-icon>{% if is_saved %}♥{% else %}♡{% endif %}</span>
+                <span data-save-label>{% if is_saved %}Saved Residence{% else %}Save Residence{% endif %}</span>
+              </button>
+            </form>
+          {% else %}
+            <a href="{% url 'login' %}?next={{ request.path }}" class="pn-btn pn-btn-sm">♡ Sign In to Save</a>
+          {% endif %}
+
+          <button type="button" id="pn-copy-share-btn" class="pn-btn pn-btn-sm">Share Link</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Architectural Two-Column Split -->
+    <div class="pn-grid-split">
+      <!-- Left: Gallery, Specs, EMI Calculator, Map -->
+      <div class="pn-stack-lg">
+        <!-- Gallery Frame -->
+        <div>
+          <div class="pn-gallery-main">
+            {% if images_list %}
+              <button type="button" data-lightbox-src="{{ images_list.0.safe_url }}" data-lightbox-alt="{{ property.title }} — Primary View" class="w-full h-full border-0 p-0 bg-transparent" style="display:block;width:100%;height:100%;">
+                <img src="{{ images_list.0.safe_url }}" alt="{{ property.title }} primary architectural view">
+              </button>
             {% else %}
-            <a href="{% url 'home' %}" class="hover:text-indigo-600 text-decoration-none">Home</a>
+              <button type="button" data-lightbox-src="{{ property.primary_image_url }}" data-lightbox-alt="{{ property.title }}" class="w-full h-full border-0 p-0 bg-transparent" style="display:block;width:100%;height:100%;">
+                <img src="{{ property.primary_image_url }}" alt="{{ property.title }}">
+              </button>
             {% endif %}
-            <span class="mx-2">/</span>
-            <a href="{% if request.user == property.agent or request.user.is_superuser %} {% url 'agent_property_list' %} {% else %}{% url 'property_list' %}{% endif %}" class="hover:text-indigo-600 text-decoration-none">Properties</a>
-            <span class="mx-2">/</span>
-            <span class="text-gray-800">{{ property.title }}</span>
-        </nav>
-        
-        <div class="flex gap-3 items-center">
-            {% if request.user.is_authenticated and request.user != property.agent %}
-                <form method="POST" action="{% url 'save_property' property.id %}" class="m-0">
-                    {% csrf_token %}
-                    <button type="submit" class="border px-4 py-2 rounded-lg font-medium transition text-sm text-decoration-none shadow-sm flex items-center {% if is_saved %}bg-red-50 text-red-600 border-red-200 hover:bg-red-100{% else %}bg-white text-gray-700 border-gray-300 hover:bg-gray-50{% endif %}">
-                        {% if is_saved %}
-                            <i class="fa-solid fa-heart mr-2"></i> Saved
-                        {% else %}
-                            <i class="fa-regular fa-heart mr-2"></i> Save
-                        {% endif %}
-                    </button>
-                </form>
-            {% endif %}
+          </div>
 
-            {% if request.user == property.agent or request.user.is_superuser %}
-                <a href="#" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 font-medium transition text-sm text-decoration-none shadow-sm flex items-center">
-                    <i class="fa-solid fa-pen-to-square mr-2"></i> Edit
-                </a>
-                <a href="#" class="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 font-medium transition text-sm text-decoration-none shadow-sm flex items-center">
-                    <i class="fa-solid fa-trash-can mr-2"></i> Delete
-                </a>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="max-w-7xl mx-auto px-4 mb-4">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="p-4 mb-4 rounded-lg text-sm font-medium {% if message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200{% elif message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% endif %}" role="alert">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-    </div>
-
-    <div class="max-w-7xl mx-auto px-4">
-        
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4 mb-8 h-[400px] md:h-[500px] rounded-2xl overflow-hidden">
-            <div class="md:col-span-2 lg:col-span-3 h-full relative group cursor-pointer" data-bs-toggle="modal" data-bs-target="#imageGalleryModal">
-                {% if property.images.first %}
-                    <img src="{{ property.images.first.image.url }}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" alt="{{ property.title }}">
-                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition duration-300 flex items-center justify-center">
-                        <span class="bg-white/90 backdrop-blur-sm text-gray-800 font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition duration-300 transform translate-y-4 group-hover:translate-y-0">
-                            <i class="fa-solid fa-expand mr-2"></i> View Gallery
-                        </span>
-                    </div>
-                {% else %}
-                    <div class="w-full h-full bg-gray-200 flex items-center justify-center"><i class="fa-solid fa-image text-5xl text-gray-400"></i></div>
-                {% endif %}
-                
-                <div class="absolute top-4 left-4 flex gap-2">
-                    <span class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wider shadow-md">For {{ property.listing_type }}</span>
-                    {% if property.status|lower == 'available' %} <span class="bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wider shadow-md">Available</span>
-                    {% else %}
-                        <span class="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wider shadow-md">{{ property.status }}</span>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="hidden md:flex flex-col gap-2 md:gap-4 h-full">
-                {% for img in property.images.all|slice:"1:3" %}
-                <div class="h-1/2 w-full overflow-hidden relative group cursor-pointer" data-bs-toggle="modal" data-bs-target="#imageGalleryModal">
-                    <img src="{{ img.image.url }}" class="w-full h-full object-cover transition duration-500 group-hover:scale-110" alt="Gallery Image">
-                    
-                    {% if forloop.last and property.images.count > 3 %}
-                        <div class="absolute inset-0 bg-black/60 flex items-center justify-center transition hover:bg-black/70">
-                            <span class="text-white font-bold text-xl">+{{ property.images.count|add:"-3" }} Photos</span>
-                        </div>
-                    {% else %}
-                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition duration-300"></div>
-                    {% endif %}
-                </div>
-                {% empty %}
-                <div class="h-full w-full bg-gray-100 flex items-center justify-center"><p class="text-gray-400 text-sm">No extra images</p></div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <div class="lg:col-span-2 space-y-8">
-                
-                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-                        <div>
-                            <p class="text-sm font-bold text-indigo-600 uppercase tracking-widest mb-1">{{ property.property_type.name }}</p>
-                            <h1 class="text-2xl md:text-4xl font-bold text-gray-800 mb-2">{{ property.title }}</h1>
-                            <p class="text-gray-500 text-lg"><i class="fa-solid fa-location-dot text-gray-400 mr-2"></i>{{ property.location }}, {{ property.city }}</p>
-                        </div>
-                        <div class="bg-indigo-50 px-6 py-3 rounded-xl border border-indigo-100 text-center md:text-right">
-                            <p class="text-sm text-gray-500 font-medium mb-0">Asking Price</p>
-                            <h2 class="text-3xl font-black text-indigo-700 mb-0">${{ property.price }}{% if property.listing_type == 'Rent' %}<span class="text-lg font-medium text-gray-500">/mo</span>{% endif %}</h2>
-                        </div>
-                    </div>
-                    
-                    <hr class="border-gray-100 my-6">
-                    
-                    <div class="flex flex-wrap gap-8 text-gray-700">
-                        {% if property.bedrooms %}
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-xl text-indigo-500"><i class="fa-solid fa-bed"></i></div>
-                            <div>
-                                <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-0">Bedrooms</p>
-                                <p class="text-lg font-bold mb-0">{{ property.bedrooms }}</p>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        {% if property.bathrooms %}
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-xl text-indigo-500"><i class="fa-solid fa-bath"></i></div>
-                            <div>
-                                <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-0">Bathrooms</p>
-                                <p class="text-lg font-bold mb-0">{{ property.bathrooms }}</p>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-xl text-indigo-500"><i class="fa-solid fa-vector-square"></i></div>
-                            <div>
-                                <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-0">Total Area</p>
-                                <p class="text-lg font-bold mb-0">{{ property.area_sqft }} <span class="text-sm font-medium">sqft</span></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Property Description</h3>
-                    <div class="prose max-w-none text-gray-600 leading-relaxed space-y-4">
-                        {{ property.description|linebreaks }}
-                    </div>
-                </div>
-                
-                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Location on Map</h3>
-                    <div class="w-full h-64 bg-gray-200 rounded-xl flex items-center justify-center border border-gray-300 relative overflow-hidden">
-                        <div class="absolute inset-0 bg-[url('https://www.google.com/maps/d/thumbnail?mid=1vW5D1dKofYh9Jv_f61w_v0Yx14g&hl=en')] bg-cover bg-center opacity-40"></div>
-                        <div class="relative text-center z-10 p-4 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm">
-                            <i class="fa-solid fa-map-location-dot text-3xl text-indigo-600 mb-2"></i>
-                            <p class="font-bold text-gray-800">{{ property.location }}</p>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="lg:col-span-1 space-y-6 relative">
-                <div class="sticky top-[100px] space-y-6">
-                    
-                    <div class="bg-white/70 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 rounded-2xl relative overflow-hidden">
-                        <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                        
-                        <h3 class="text-lg font-bold text-gray-800 mb-4 relative z-10">Listed By</h3>
-                        
-                        <div class="flex items-center gap-4 mb-5 relative z-10">
-                            <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
-                                {% if property.agent.profile_picture %}
-                                    <img src="{{ property.agent.profile_picture.url }}" class="w-full h-full object-cover">
-                                {% else %}
-                                    <div class="w-full h-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xl">
-                                        {{ property.agent.username|first|upper }}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-800">{{ property.agent.first_name|default:property.agent.username }}</h4>
-                                <p class="text-xs text-indigo-600 font-medium mb-1">Real Estate Agent</p>
-                                <a href="{% url 'properties_by_agent' property.agent.pk %}" class="text-xs text-gray-500 hover:text-indigo-600 text-decoration-none">View Profile →</a>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-3 relative z-10">
-                            {% if property.agent.phone_number %}
-                            <a href="tel:{{ property.agent.phone_number }}" class="w-full block text-center border border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700 font-semibold py-2.5 rounded-xl transition text-decoration-none text-sm">
-                                <i class="fa-solid fa-phone mr-2"></i> {{ property.agent.phone_number }}
-                            </a>
-                            {% endif %}
-                            <a href="mailto:{{ property.agent.email }}" class="w-full block text-center bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2.5 rounded-xl transition text-decoration-none text-sm shadow-md">
-                                <i class="fa-solid fa-envelope mr-2"></i> Message Agent
-                            </a>
-                        </div>
-                    </div>
-
-                    {% if request.user != property.agent %}
-                        {% if property.status|lower == 'available' %} 
-                        <div class="bg-indigo-600/5 backdrop-blur-xl border border-indigo-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 rounded-2xl relative overflow-hidden">
-                            <h3 class="text-lg font-bold text-gray-800 mb-2"><i class="fa-regular fa-calendar-check text-indigo-600 mr-2"></i> Book a Tour</h3>
-                            <p class="text-sm text-gray-500 mb-5">Schedule a visit to see this property in person.</p>
-                            
-                            <style>
-                                .custom-picker::-webkit-calendar-picker-indicator {
-                                    opacity: 0;
-                                    width: 100%;
-                                    height: 100%;
-                                    position: absolute;
-                                    top: 0;
-                                    left: 0;
-                                    cursor: pointer;
-                                }
-                            </style>
-
-                            <form method="POST" action="{% url 'property_detail' property.id %}">
-                                {% csrf_token %}
-                                <div class="space-y-4">
-                                    
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">Date</label>
-                                        <div class="relative">
-                                            <input type="date" name="scheduled_date" required min="{% now 'Y-m-d' %}" value="{% now 'Y-m-d' %}"
-                                                class="custom-picker w-full bg-white/80 border border-gray-200 rounded-xl pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm cursor-pointer relative z-10 bg-transparent">
-                                            
-                                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none z-0">
-                                                <i class="fa-regular fa-calendar text-indigo-500 text-lg"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">Time</label>
-                                        <div class="relative">
-                                            <input type="time" name="scheduled_time" required 
-                                                class="custom-picker w-full bg-white/80 border border-gray-200 rounded-xl pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm cursor-pointer relative z-10 bg-transparent">
-                                            
-                                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none z-0">
-                                                <i class="fa-regular fa-clock text-indigo-500 text-lg"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">Message (Optional)</label>
-                                        <textarea name="message" rows="2" class="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm" placeholder="Any specific requests?"></textarea>
-                                    </div>
-                                    
-                                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow-lg mt-2">
-                                        Request Tour
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                        {% else %}
-                        <div class="bg-red-50 border border-red-100 p-6 rounded-2xl text-center">
-                            <i class="fa-solid fa-ban text-3xl text-red-400 mb-3"></i>
-                            <h3 class="text-lg font-bold text-gray-800 mb-1">Not Available</h3>
-                            <p class="text-sm text-gray-500 mb-0">This property is currently {{ property.status }} and cannot be booked for a tour.</p>
-                        </div>
-                        {% endif %}
-                    {% else %}
-                        <div class="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl text-center">
-                            <i class="fa-solid fa-crown text-3xl text-indigo-400 mb-3"></i>
-                            <h3 class="text-lg font-bold text-gray-800 mb-1">Your Listing</h3>
-                            <p class="text-sm text-gray-500 mb-0">You are the owner of this property. You can manage tour requests from your dashboard.</p>
-                        </div>
-                    {% endif %}
-
-                </div>
-            </div>
-            
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="imageGalleryModal" tabindex="-1" aria-labelledby="imageGalleryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content bg-transparent border-0">
-            
-            <div class="modal-header border-0 justify-content-end pb-2">
-                <button type="button" class="bg-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-200 transition focus:outline-none" data-bs-dismiss="modal" aria-label="Close">
-                    <i class="fa-solid fa-xmark text-xl text-gray-800"></i>
+          {% if images_list|length > 1 %}
+            <div class="pn-gallery-thumbs" role="list" aria-label="Property gallery thumbnails">
+              {% for img in images_list %}
+                <button type="button" class="pn-thumb-btn" data-lightbox-src="{{ img.safe_url }}" data-lightbox-alt="{{ property.title }} — View {{ forloop.counter }}" aria-label="Open view {{ forloop.counter }} in lightbox">
+                  <img src="{{ img.safe_url }}" alt="{{ property.title }} thumbnail {{ forloop.counter }}" loading="lazy">
                 </button>
+              {% endfor %}
             </div>
-            
-            <div class="modal-body p-0">
-                <div id="propertyImageCarousel" class="carousel slide" data-bs-ride="carousel">
-                    
-                    <div class="carousel-indicators mb-0 pb-3">
-                        {% for img in property.images.all %}
-                            <button type="button" data-bs-target="#propertyImageCarousel" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}" aria-current="true"></button>
-                        {% endfor %}
-                    </div>
-
-                    <div class="carousel-inner rounded-xl overflow-hidden shadow-2xl bg-black/90">
-                        {% for img in property.images.all %}
-                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                            <img src="{{ img.image.url }}" class="d-block w-100 h-[50vh] md:h-[75vh] object-contain" alt="Property Image">
-                        </div>
-                        {% endfor %}
-                    </div>
-                    
-                    <button class="carousel-control-prev" type="button" data-bs-target="#propertyImageCarousel" data-bs-slide="prev">
-                        <span class="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/80 transition">
-                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        </span>
-                        <span class="visually-hidden">Previous</span>
-                    </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#propertyImageCarousel" data-bs-slide="next">
-                        <span class="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/80 transition">
-                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        </span>
-                        <span class="visually-hidden">Next</span>
-                    </button>
-                </div>
-            </div>
+          {% endif %}
         </div>
+
+        <!-- Key Architectural Metrics Strip -->
+        <div class="pn-grid-4">
+          <div class="pn-kpi-card">
+            <span class="pn-kicker">Bedrooms</span>
+            <span class="pn-kpi-val">{{ property.bedrooms|default:"Studio" }}</span>
+          </div>
+          <div class="pn-kpi-card">
+            <span class="pn-kicker">Bathrooms</span>
+            <span class="pn-kpi-val">{{ property.bathrooms|default:"—" }}</span>
+          </div>
+          <div class="pn-kpi-card">
+            <span class="pn-kicker">Floorplate</span>
+            <span class="pn-kpi-val">{{ property.area_sqft }} <span style="font-size:0.85rem;color:var(--g2-sand-dim);">sqft</span></span>
+          </div>
+          <div class="pn-kpi-card">
+            <span class="pn-kicker">Published</span>
+            <span class="pn-kpi-val" style="font-size:1.35rem;">{{ property.created_at|date:"M Y" }}</span>
+          </div>
+        </div>
+
+        <!-- Editorial Narrative -->
+        <section class="pn-card pn-stack-md" style="padding:clamp(1.5rem, 3vw, 2.25rem);">
+          <div>
+            <p class="pn-kicker">Architectural Overview</p>
+            <h2 class="pn-h2" style="margin:0.35rem 0 0;">Residence Specifications &amp; Narrative</h2>
+          </div>
+          <div style="font-size:1rem;line-height:1.75;color:var(--g2-sand);white-space:pre-line;">{{ property.description }}</div>
+        </section>
+
+        <!-- Interactive Mortgage / EMI Calculator -->
+        {% if property.listing_type == 'sale' %}
+          <section class="pn-card pn-stack-md pn-native-cursor" data-emi-calc data-price="{{ property.price }}" style="padding:clamp(1.5rem, 3vw, 2.25rem);">
+            <div class="pn-row-between">
+              <div>
+                <p class="pn-kicker">Financial Modeling</p>
+                <h2 class="pn-h2" style="margin:0.35rem 0 0;">Mortgage &amp; Monthly Payment Estimator</h2>
+              </div>
+              <div style="text-align:right;">
+                <span class="pn-kicker" style="display:block;">Estimated Monthly EMI</span>
+                <strong data-emi-monthly class="g2-display" style="font-size:2rem;color:var(--g2-gold);font-variant-numeric:tabular-nums;">$0</strong>
+              </div>
+            </div>
+
+            <div class="pn-grid-3" style="margin-top:0.5rem;">
+              <div class="pn-field" style="margin:0;">
+                <div class="pn-row-between"><label for="emi-down" class="pn-label">Down Payment</label><span data-emi-down-val class="pn-muted" style="font-size:0.82rem;">20%</span></div>
+                <input id="emi-down" type="range" min="5" max="70" step="5" value="20" class="pn-range" data-emi-down>
+              </div>
+              <div class="pn-field" style="margin:0;">
+                <div class="pn-row-between"><label for="emi-rate" class="pn-label">Interest Rate</label><span data-emi-rate-val class="pn-muted" style="font-size:0.82rem;">8.5%</span></div>
+                <input id="emi-rate" type="range" min="3.0" max="15.0" step="0.5" value="8.5" class="pn-range" data-emi-rate>
+              </div>
+              <div class="pn-field" style="margin:0;">
+                <div class="pn-row-between"><label for="emi-years" class="pn-label">Loan Tenure</label><span data-emi-years-val class="pn-muted" style="font-size:0.82rem;">20 yrs</span></div>
+                <input id="emi-years" type="range" min="5" max="30" step="1" value="20" class="pn-range" data-emi-years>
+              </div>
+            </div>
+
+            <div class="pn-card-subtle pn-row-between" style="padding:1rem 1.25rem;">
+              <span class="pn-muted">Financed Principal Loan Amount</span>
+              <strong data-emi-loan style="font-size:1.1rem;color:var(--g2-sand);font-variant-numeric:tabular-nums;">$0</strong>
+            </div>
+          </section>
+        {% endif %}
+
+        <!-- Interactive Location Canvas -->
+        <section class="pn-card pn-stack-md" style="padding:clamp(1.5rem, 3vw, 2.25rem);">
+          <div class="pn-row-between">
+            <div>
+              <p class="pn-kicker">Neighborhood Context</p>
+              <h2 class="pn-h2" style="margin:0.35rem 0 0;">{{ property.location }}, {{ property.city }}</h2>
+            </div>
+            <span class="pn-badge">{{ map_lat|floatformat:4 }}, {{ map_lng|floatformat:4 }}</span>
+          </div>
+          <iframe class="pn-map-embed" loading="lazy" title="Map of {{ property.title }}" src="https://maps.google.com/maps?q={{ map_lat }},{{ map_lng }}&amp;z=15&amp;output=embed"></iframe>
+        </section>
+      </div>
+
+      <!-- Right Sticky Sidebar: Owner Actions, Tour Booking, Advisor -->
+      <aside class="pn-sticky-aside pn-stack-md">
+        {% if can_manage %}
+          <div class="pn-card pn-stack-sm" style="padding:1.5rem;border-color:color-mix(in srgb, var(--g2-gold) 45%, transparent);">
+            <p class="pn-kicker">Listing Controls</p>
+            <div class="pn-row">
+              <a href="{% url 'edit_property' property.id %}" class="pn-btn pn-btn-primary pn-btn-sm">Edit Listing</a>
+              <button type="button"
+                      class="pn-btn pn-btn-danger pn-btn-sm"
+                      data-confirm-action="{% url 'delete_property' property.id %}"
+                      data-confirm-title="Delete Residence Listing"
+                      data-confirm-body="Are you sure you want to permanently remove '{{ property.title }}' and all attached photos?"
+                      data-confirm-label="Delete Permanently">
+                Delete Listing
+              </button>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Private Viewing / Tour Request Box -->
+        <section class="pn-card pn-stack-md" style="padding:1.75rem;">
+          <div>
+            <p class="pn-kicker">Private Concierge</p>
+            <h2 class="pn-h2" style="margin:0.35rem 0 0;font-size:1.55rem;">Schedule a Viewing</h2>
+          </div>
+
+          {% if user_booking %}
+            <div class="pn-card-subtle pn-stack-sm" style="padding:1.15rem;">
+              <div class="pn-row-between">
+                <span class="pn-kicker" style="font-size:0.62rem;">Your Request Status</span>
+                <span class="pn-badge {% if user_booking.status == 'Confirmed' or user_booking.status == 'Completed' %}pn-badge-confirmed{% elif user_booking.status == 'Cancelled' %}pn-badge-cancelled{% else %}pn-badge-pending{% endif %}">
+                  {{ user_booking.status }}
+                </span>
+              </div>
+              <p style="margin:0;font-size:0.92rem;color:var(--g2-sand);">{{ user_booking.scheduled_date|date:"M d, Y" }} at {{ user_booking.scheduled_time|time:"h:i A" }}</p>
+              {% if user_booking.agent_message %}
+                <p class="pn-muted" style="margin:0;font-size:0.84rem;">Advisor Note: {{ user_booking.agent_message }}</p>
+              {% endif %}
+              <a href="{% url 'my_tours' %}" class="pn-btn pn-btn-sm self-start">Manage in My Tours →</a>
+            </div>
+          {% endif %}
+
+          {% if property.status == 'available' %}
+            {% if user.is_authenticated %}
+              <form method="POST" action="{% url 'property_detail' property.id %}" class="pn-validated-form pn-native-cursor" novalidate>
+                {% csrf_token %}
+                <div class="pn-field">
+                  <label for="{{ form.scheduled_date.id_for_label }}" class="pn-label">Preferred Date *</label>
+                  {{ form.scheduled_date }}
+                  <span id="err-tour-date" class="pn-error-msg">Please select today or a future date.</span>
+                  {% if form.scheduled_date.errors %}<ul class="pn-server-errors">{% for e in form.scheduled_date.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+
+                <div class="pn-field">
+                  <label for="{{ form.scheduled_time.id_for_label }}" class="pn-label">Preferred Time *</label>
+                  {{ form.scheduled_time }}
+                  <span id="err-tour-time" class="pn-error-msg">Please choose a viewing time.</span>
+                  {% if form.scheduled_time.errors %}<ul class="pn-server-errors">{% for e in form.scheduled_time.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+
+                <div class="pn-field">
+                  <label for="{{ form.message.id_for_label }}" class="pn-label">Visitor Note</label>
+                  <span class="pn-hint">Share your viewing preferences or questions for the advisor.</span>
+                  {{ form.message }}
+                  {% if form.message.errors %}<ul class="pn-server-errors">{% for e in form.message.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+
+                <button type="submit" class="pn-btn pn-btn-primary w-full">Confirm Private Viewing Request →</button>
+              </form>
+            {% else %}
+              <div class="pn-stack-sm">
+                <p class="pn-muted" style="margin:0;">Sign in to book an exclusive architectural tour and track advisor confirmations in real time.</p>
+                <a href="{% url 'login' %}?next={{ request.path }}" class="pn-btn pn-btn-primary w-full">Sign In to Schedule Tour →</a>
+                <a href="{% url 'register' %}?next={{ request.path }}" class="pn-btn w-full">Create Buyer Account</a>
+              </div>
+            {% endif %}
+          {% else %}
+            <div class="pn-alert">
+              This property is currently marked as <strong>{{ property.get_status_display }}</strong>. Reach out to the advisor below for similar private off-market options.
+            </div>
+          {% endif %}
+        </section>
+
+        <!-- Assigned Advisor Profile Card -->
+        <section class="pn-card pn-stack-md" style="padding:1.75rem;">
+          <p class="pn-kicker" style="margin:0;">Listed Advisor</p>
+          <div class="pn-row">
+            {% if property.agent.profile %}
+              <img src="{{ property.agent.profile.url }}" alt="{{ property.agent.get_full_name|default:property.agent.username }}" class="pn-avatar-lg" style="width:68px;height:68px;">
+            {% else %}
+              <span class="pn-avatar-lg pn-avatar-initials" style="width:68px;height:68px;font-size:1.35rem;">{{ property.agent.username|slice:":2"|upper }}</span>
+            {% endif %}
+            <div>
+              <h3 class="pn-h3" style="margin:0;">{{ property.agent.get_full_name|default:property.agent.username }}</h3>
+              <p class="pn-muted" style="margin:0.2rem 0 0;font-size:0.84rem;">Verified PropNest Advisor</p>
+            </div>
+          </div>
+
+          {% if property.agent.bio %}
+            <p class="pn-muted" style="margin:0;">{{ property.agent.bio|truncatewords:28 }}</p>
+          {% endif %}
+
+          <div class="pn-stack-xs" style="font-size:0.86rem;">
+            {% if property.agent.phone %}
+              <span class="pn-muted">Phone: <a href="tel:{{ property.agent.phone }}" class="text-[var(--g2-sand)] hover:text-[var(--g2-gold)] no-underline">{{ property.agent.phone }}</a></span>
+            {% endif %}
+            <span class="pn-muted">Email: <a href="mailto:{{ property.agent.email }}" class="text-[var(--g2-sand)] hover:text-[var(--g2-gold)] no-underline">{{ property.agent.email }}</a></span>
+          </div>
+
+          <div class="pn-row">
+            <a href="{% url 'properties_by_agent' property.agent.id %}" class="pn-btn pn-btn-sm">Advisor Portfolio</a>
+            <a href="{% url 'contact' %}?property={{ property.id }}" class="pn-btn pn-btn-sm pn-btn-secondary">Direct Inquiry</a>
+          </div>
+        </section>
+      </aside>
     </div>
+
+    <!-- Similar Curated Holdings -->
+    {% if similar_properties %}
+      <section class="pn-stack-md" style="margin-top:2rem;">
+        <hr class="pn-divider">
+        <div class="pn-row-between">
+          <div>
+            <p class="pn-kicker">Comparable Holdings</p>
+            <h2 class="pn-h2" style="margin:0.35rem 0 0;">Similar Architectural Residences</h2>
+          </div>
+          <a href="{% url 'property_list' %}" class="pn-btn pn-btn-sm">Full Catalog →</a>
+        </div>
+        <div class="pn-grid-3">
+          {% for sim in similar_properties %}
+            {% include "includes/property_card.html" with prop=sim %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (() => {
+    const shareBtn = document.getElementById('pn-copy-share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', async () => {
+        try {
+          if (navigator.share) {
+            await navigator.share({ title: document.title, url: window.location.href });
+            return;
+          }
+          await navigator.clipboard.writeText(window.location.href);
+          shareBtn.textContent = 'Link Copied ✓';
+          setTimeout(() => { shareBtn.textContent = 'Share Link'; }, 2400);
+        } catch (_) {}
+      });
+    }
+    const dateInput = document.getElementById('{{ form.scheduled_date.id_for_label }}');
+    if (dateInput && !dateInput.getAttribute('min')) {
+      dateInput.setAttribute('min', new Date().toISOString().split('T')[0]);
+    }
+    if (dateInput) dateInput.setAttribute('data-error', 'err-tour-date');
+    const timeInput = document.getElementById('{{ form.scheduled_time.id_for_label }}');
+    if (timeInput) timeInput.setAttribute('data-error', 'err-tour-time');
+  })();
+</script>
 {% endblock %}

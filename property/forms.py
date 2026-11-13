@@ -1,10 +1,16 @@
 from datetime import date
 
 from django import forms
-from .models import Property, TourBooking 
+from django.contrib.auth import get_user_model
+
+from .models import ContactMessage, Property, PropertyType, TourBooking
+
+User = get_user_model()
+
 
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
+
 
 class MultipleFileField(forms.FileField):
     def __init__(self, *args, **kwargs):
@@ -13,63 +19,166 @@ class MultipleFileField(forms.FileField):
 
     def clean(self, data, initial=None):
         single_file_clean = super().clean
+        if not data:
+            return []
         if isinstance(data, (list, tuple)):
-            result = [single_file_clean(d, initial) for d in data]
-        else:
-            result = [single_file_clean(data, initial)]
-        return result
+            return [single_file_clean(d, initial) for d in data if d]
+        return [single_file_clean(data, initial)]
+
 
 class PropertyForm(forms.ModelForm):
     images = MultipleFileField(
         required=False,
-        label="Upload Property Images"
+        label="Property Gallery Images",
     )
 
     class Meta:
         model = Property
         fields = [
-            'title', 'description', 'property_type', 'listing_type',
-            'price', 'bedrooms', 'bathrooms', 'area_sqft',
-            'location', 'city'
+            "title",
+            "description",
+            "property_type",
+            "listing_type",
+            "status",
+            "price",
+            "bedrooms",
+            "bathrooms",
+            "area_sqft",
+            "location",
+            "city",
+            "state",
+            "latitude",
+            "longitude",
+            "is_featured",
         ]
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Write a detailed description...'}),
-            'title': forms.TextInput(attrs={'placeholder': 'e.g. Modern Apartment with Sea View'}),
+            "title": forms.TextInput(attrs={"placeholder": "e.g. Lakefront Sky Villa in Gulshan"}),
+            "description": forms.Textarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Describe architectural highlights, lighting, finishes, and neighborhood connectivity...",
+                }
+            ),
+            "price": forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "e.g. 285000"}),
+            "bedrooms": forms.NumberInput(attrs={"min": "0", "placeholder": "e.g. 4"}),
+            "bathrooms": forms.NumberInput(attrs={"min": "0", "placeholder": "e.g. 3"}),
+            "area_sqft": forms.NumberInput(attrs={"min": "1", "placeholder": "e.g. 2400"}),
+            "location": forms.TextInput(attrs={"placeholder": "e.g. Road 74, Gulshan-2"}),
+            "city": forms.TextInput(attrs={"placeholder": "e.g. Dhaka"}),
+            "state": forms.TextInput(attrs={"placeholder": "e.g. Dhaka Division"}),
+            "latitude": forms.NumberInput(attrs={"step": "0.000001", "placeholder": "e.g. 23.793700"}),
+            "longitude": forms.NumberInput(attrs={"step": "0.000001", "placeholder": "e.g. 90.406600"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+
+        self.fields["status"].required = False
+        self.fields["state"].required = False
+        self.fields["latitude"].required = False
+        self.fields["longitude"].required = False
+        self.fields["bedrooms"].required = False
+        self.fields["bathrooms"].required = False
+        self.fields["is_featured"].required = False
+
+        if not self.instance.pk:
+            self.fields["status"].initial = "available"
+            self.fields["state"].initial = "Dhaka Division"
+
+        if user and (user.is_superuser or getattr(user, "role", None) == "admin"):
+            self.fields["assigned_agent"] = forms.ModelChoiceField(
+                queryset=User.objects.filter(role="agent").order_by("first_name", "username"),
+                required=False,
+                label="Assigned Agent",
+                initial=self.instance.agent_id if self.instance.pk else None,
+            )
+
+        for field_name, field in self.fields.items():
+            if field_name == "images":
+                field.widget.attrs.update({"class": "pn-input", "multiple": True, "accept": "image/*"})
+            elif isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.update({"class": "pn-checkbox"})
+            elif isinstance(field.widget, forms.Select):
+                field.widget.attrs.update({"class": "pn-select"})
+            elif isinstance(field.widget, forms.Textarea):
+                field.widget.attrs.update({"class": "pn-textarea"})
+            else:
+                field.widget.attrs.update({"class": "pn-input"})
+
+    def clean_status(self):
+        return self.cleaned_data.get("status") or (self.instance.status if self.instance.pk else "available")
+
+    def clean_state(self):
+        return (self.cleaned_data.get("state") or "").strip() or (
+            self.instance.state if self.instance.pk and self.instance.state else "Dhaka"
+        )
+
+
+class TourBookingForm(forms.ModelForm):
+    class Meta:
+        model = TourBooking
+        fields = ["scheduled_date", "scheduled_time", "message"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        today = date.today().strftime("%Y-%m-%d")
+        self.fields["scheduled_date"].widget = forms.DateInput(
+            attrs={"class": "pn-input", "type": "date", "min": today}
+        )
+        self.fields["scheduled_time"].widget = forms.TimeInput(
+            attrs={"class": "pn-input", "type": "time"}
+        )
+        self.fields["message"].widget = forms.Textarea(
+            attrs={
+                "class": "pn-textarea",
+                "rows": 3,
+                "placeholder": "Share your preferred viewing focus, parking needs, or questions...",
+            }
+        )
+
+    def clean_scheduled_date(self):
+        scheduled = self.cleaned_data.get("scheduled_date")
+        if scheduled and scheduled < date.today():
+            raise forms.ValidationError("Please choose today or a future date for your private tour.")
+        return scheduled
+
+
+class PropertyTypeForm(forms.ModelForm):
+    class Meta:
+        model = PropertyType
+        fields = ["name"]
+        widgets = {
+            "name": forms.Select(attrs={"class": "pn-select"}),
+        }
+
+
+class ContactForm(forms.ModelForm):
+    website = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={"tabindex": "-1", "aria-hidden": "true", "autocomplete": "off"}),
+    )
+
+    class Meta:
+        model = ContactMessage
+        fields = ["name", "email", "phone", "subject", "property", "message"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "pn-input", "autocomplete": "name", "placeholder": "Your full name"}),
+            "email": forms.EmailInput(attrs={"class": "pn-input", "autocomplete": "email", "placeholder": "you@example.com"}),
+            "phone": forms.TextInput(attrs={"class": "pn-input", "autocomplete": "tel", "placeholder": "+880 1700-000000 (optional)"}),
+            "subject": forms.TextInput(attrs={"class": "pn-input", "placeholder": "e.g. Private viewing or advisory request"}),
+            "property": forms.Select(attrs={"class": "pn-select"}),
+            "message": forms.Textarea(
+                attrs={
+                    "class": "pn-textarea",
+                    "rows": 5,
+                    "placeholder": "Tell us which residence, neighborhood, budget, or timeline you have in mind...",
+                }
+            ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        for field_name, field in self.fields.items():
-            if field_name != 'images':
-                field.widget.attrs.update({
-                    'class': 'w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm'
-                })
-                
-    
-class TourBookingForm(forms.ModelForm):
-    class Meta:
-        model = TourBooking
-        fields = ['scheduled_date', 'scheduled_time', 'message']
-        
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        today = date.today().strftime('%Y-%m-%d')
-        
-        self.fields['scheduled_date'].widget.attrs.update({
-            'class': 'w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm cursor-pointer', 
-            'type': 'date',
-            'min': today, 
-        })
-        
-        self.fields['scheduled_time'].widget.attrs.update({
-            'class': 'w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm cursor-pointer', 
-            'type': 'time'
-        })
-        
-        self.fields['message'].widget.attrs.update({
-            'class': 'w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm', 
-            'rows': '2', 
-            'placeholder': 'Any specific requests?'
-        })
+        self.fields["property"].required = False
+        self.fields["property"].empty_label = "General Architectural Inquiry (No specific property)"
+        self.fields["property"].queryset = Property.objects.filter(status="available").order_by("title")

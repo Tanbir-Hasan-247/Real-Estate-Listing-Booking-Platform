@@ -1,164 +1,751 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Home - PropNest{% endblock %}
+{% block title %}PropNest Real Estate — Architectural Living &amp; Curated Residences{% endblock %}
+
+{% block footer_classes %}pn-home-footer{% endblock %}
 
 {% block content %}
-    <section class="relative h-[600px] flex items-center justify-center">
-      <!-- Background Image with Overlay -->
-      <div class="absolute inset-0 z-0">
-        <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80" alt="Hero Background" class="w-full h-full object-cover" />
-        <div class="absolute inset-0 bg-black bg-opacity-50"></div>
-      </div>
+{{ home_json_data|json_script:"propnest-home-data" }}
 
-      <!-- Hero Content -->
-      <div class="relative z-10 text-center px-4 w-full max-w-4xl">
-        <h1 class="text-4xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
-          Find Your Perfect Place to Call Home
-        </h1>
-        <p class="text-lg md:text-xl text-gray-200 mb-10">
-          Explore over 10,000+ properties for sale and rent across the country.
-        </p>
+<!-- 1. HERO SECTION (Exact Expanding Architectural Frame + Clipped City Word) -->
+<section data-g2-section="hero" class="relative" style="height: calc(190vh + var(--g2-hero-pan, 0px)); --g2-hero-w: 1430px; --g2-hero-pan: 16px;">
+  <div class="sticky top-0 overflow-hidden" style="height: 100vh; --g2-e: 0; --g2-hero-y: 0.0px;">
+    <div class="g2-hero-pad relative w-full">
+      <h1 class="sr-only">PROPNEST REAL ESTATE — Transforming the future of living.</h1>
 
-        <!-- Advanced Search Box -->
-        <div class="bg-white p-4 rounded-xl shadow-2xl flex flex-col md:flex-row gap-4">
-          <div class="flex-1 flex items-center bg-gray-100 rounded-lg px-4 py-3">
-            <i class="fa-solid fa-location-dot text-brand mr-3"></i>
-            <input type="text" placeholder="City, Neighborhood, or Address" class="bg-transparent border-none outline-none w-full text-gray-700" />
-          </div>
-          
-          <div class="flex-1 flex items-center bg-gray-100 rounded-lg px-4 py-3 border-l md:border-l-0 border-gray-300">
-            <i class="fa-solid fa-house text-brand mr-3"></i>
-            <select class="bg-transparent border-none outline-none w-full text-gray-700 cursor-pointer">
-              <option value="">Property Type</option>
-              <option value="apartment">Apartment</option>
-              <option value="villa">Villa</option>
-              <option value="office">Office</option>
-            </select>
+      <div class="g2-hero-frame relative overflow-hidden cursor-grab touch-pan-y active:cursor-grabbing" data-lenis-prevent-horizontal="" style="overscroll-behavior:auto">
+        <div class="flex max-md:grid max-md:w-full! max-md:grid-cols-[minmax(0,1fr)] max-md:[transform:none]! transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)]" style="width: 200%; transform: translateX(calc(0% + 0px));">
+          <!-- Slide 1 -->
+          <div class="shrink-0 max-md:w-full! max-md:[grid-area:1/1] max-md:z-[2] max-md:scale-100 max-md:opacity-100 max-md:[transition:opacity_900ms_ease,scale_1600ms_cubic-bezier(0.16,1,0.3,1)]" style="width:50%" aria-hidden="false">
+            <div class="g2-hero-sheet relative [--hero-fit:cover]" style="--g2-word-fit:1">
+              <div aria-hidden="true" class="g2-bg absolute inset-0 bg-top bg-no-repeat"
+                   style="--g2-src-sm:url('{% if hero_props.0 %}{{ hero_props.0.hero_sm_url }}{% else %}https://www.golpoholdings.com/golpo/golpo-aleya/phone/golpo-aleya-phone-hero.avif{% endif %}');--g2-src-lg:url('{% if hero_props.0 %}{{ hero_props.0.hero_lg_url }}{% else %}https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-exterior-dusk.avif{% endif %}');background-size:var(--hero-fit)"></div>
+              <p aria-hidden="true" class="g2-display relative select-none whitespace-nowrap uppercase leading-[0.78] text-transparent" style="font-size:var(--g2-word-fs);font-weight:700;letter-spacing:0.015em">
+                {% if hero_props.0 %}{{ hero_props.0.city|default:"Dhaka" }}{% else %}Dhaka{% endif %}
+              </p>
+              <div aria-hidden="true" class="g2-hero-plate absolute inset-x-0 top-0 z-10" style="font-size:var(--g2-word-fs);background-color:var(--g2-ink)"></div>
+              <div aria-hidden="true" class="g2-hero-pic aspect-[4/5] w-full sm:aspect-[3/2] md:aspect-[16/8]"></div>
+              <p aria-hidden="true" class="g2-bg g2-hero-word g2-display absolute inset-0 z-20 select-none whitespace-nowrap uppercase leading-[0.78]"
+                 style="font-weight:700;letter-spacing:0.015em;--g2-src-sm:url('{% if hero_props.0 %}{{ hero_props.0.hero_sm_url }}{% else %}https://www.golpoholdings.com/golpo/golpo-aleya/phone/golpo-aleya-phone-hero.avif{% endif %}');--g2-src-lg:url('{% if hero_props.0 %}{{ hero_props.0.hero_lg_url }}{% else %}https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-exterior-dusk.avif{% endif %}');background-size:var(--hero-fit);background-repeat:no-repeat;background-position:center top;-webkit-background-clip:text;background-clip:text;color:transparent">
+                {% if hero_props.0 %}{{ hero_props.0.city|default:"Dhaka" }}{% else %}Dhaka{% endif %}
+              </p>
+              <h2 class="sr-only">{% if hero_props.0 %}{{ hero_props.0.title }} — {{ hero_props.0.city }}{% else %}PropNest Signature Holding{% endif %}</h2>
+            </div>
           </div>
 
-          <button class="bg-brand hover:bg-brand-dark text-white font-bold py-3 px-8 rounded-lg transition">
-            Search
-          </button>
+          <!-- Slide 2 -->
+          <div class="shrink-0 max-md:w-full! max-md:[grid-area:1/1] max-md:z-[1] max-md:scale-[1.06] max-md:opacity-0 max-md:[transition:opacity_0s_linear_900ms,scale_0s_linear_900ms]" style="width:50%" aria-hidden="true">
+            <div class="g2-hero-sheet relative [--hero-fit:cover]" style="--g2-word-fit:1">
+              <div aria-hidden="true" class="g2-bg absolute inset-0 bg-top bg-no-repeat"
+                   style="--g2-src-sm:url('{% if hero_props.1 %}{{ hero_props.1.hero_sm_url }}{% else %}https://www.golpoholdings.com/golpo/golpo-dar-e-salam/phone/golpo-dar-e-salam-phone-hero.avif{% endif %}');--g2-src-lg:url('{% if hero_props.1 %}{{ hero_props.1.hero_lg_url }}{% else %}https://www.golpoholdings.com/golpo/golpo-dar-e-salam/exterior-hero.avif{% endif %}');background-size:var(--hero-fit)"></div>
+              <p aria-hidden="true" class="g2-display relative select-none whitespace-nowrap uppercase leading-[0.78] text-transparent" style="font-size:var(--g2-word-fs);font-weight:700;letter-spacing:0.015em">
+                {% if hero_props.1 %}{{ hero_props.1.city|default:"Gulshan" }}{% else %}Gulshan{% endif %}
+              </p>
+              <div aria-hidden="true" class="g2-hero-plate absolute inset-x-0 top-0 z-10" style="font-size:var(--g2-word-fs);background-color:var(--g2-ink)"></div>
+              <div aria-hidden="true" class="g2-hero-pic aspect-[4/5] w-full sm:aspect-[3/2] md:aspect-[16/8]"></div>
+              <p aria-hidden="true" class="g2-bg g2-hero-word g2-display absolute inset-0 z-20 select-none whitespace-nowrap uppercase leading-[0.78]"
+                 style="font-weight:700;letter-spacing:0.015em;--g2-src-sm:url('{% if hero_props.1 %}{{ hero_props.1.hero_sm_url }}{% else %}https://www.golpoholdings.com/golpo/golpo-dar-e-salam/phone/golpo-dar-e-salam-phone-hero.avif{% endif %}');--g2-src-lg:url('{% if hero_props.1 %}{{ hero_props.1.hero_lg_url }}{% else %}https://www.golpoholdings.com/golpo/golpo-dar-e-salam/exterior-hero.avif{% endif %}');background-size:var(--hero-fit);background-repeat:no-repeat;background-position:center top;-webkit-background-clip:text;background-clip:text;color:transparent">
+                {% if hero_props.1 %}{{ hero_props.1.city|default:"Gulshan" }}{% else %}Gulshan{% endif %}
+              </p>
+              <h2 class="sr-only">{% if hero_props.1 %}{{ hero_props.1.title }} — {{ hero_props.1.city }}{% else %}PropNest Residence{% endif %}</h2>
+            </div>
+          </div>
         </div>
-      </div>
-    </section>
 
-    <!-- ======================= -->
-    <!-- FEATURED PROPERTIES     -->
-    <!-- ======================= -->
-    <section class="py-16 px-4 max-w-7xl mx-auto">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-800 mb-4">Featured Properties</h2>
-        <p class="text-gray-600 max-w-2xl mx-auto">Handpicked exclusive properties by our expert agents for you.</p>
-      </div>
+        <!-- Mobile Gradient Scrim + Subtle Desktop Left Contrast Scrim -->
+        <div class="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-[46%] md:hidden" style="background:linear-gradient(to top, rgba(5,20,33,0.76) 0%, rgba(5,20,33,0.48) 45%, transparent 100%)" aria-hidden="true"></div>
+        <div class="pointer-events-none absolute inset-y-0 left-0 z-30 hidden md:block" style="width:54%;background:linear-gradient(to right, rgba(5,20,33,0.68) 0%, rgba(5,20,33,0.34) 50%, transparent 100%)" aria-hidden="true"></div>
 
-      <!-- Properties Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        
-        {% for property in properties %}
-        <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group">
-        
-        <div class="relative h-64 overflow-hidden">
-            {% if property.first_image %}
-                <img src="{{ property.first_image.image.url }}" alt="{{ property.title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+        <!-- Left Editorial Overlay -->
+        <div class="pointer-events-none absolute bottom-[84px] left-6 right-6 z-40 md:bottom-auto md:right-auto md:left-[12vw] md:top-1/2 md:max-w-[36rem] md:-translate-y-1/2" style="text-shadow:0 2px 24px rgba(5,20,33,0.75)">
+          <p class="text-[10.5px] font-medium tracking-[0.26em] text-[var(--g2-gold)] md:text-[12.5px]">FEATURED RESIDENCES</p>
+          <p data-hero-status class="mt-2.5 text-[12px] tracking-[0.22em] text-[var(--g2-sand)] md:mt-4 md:text-[14.5px]">
+            {% if hero_props.0 %}{{ hero_props.0.get_listing_type_display|upper }}{% else %}AVAILABLE{% endif %}
+          </p>
+          <p class="g2-display mt-2 text-[2.15rem] md:mt-2.5 md:max-w-[24vw] md:text-[clamp(2.4rem,3.9vw,4.7rem)] font-light leading-[1.03] tracking-[-0.025em] text-[var(--g2-sand)]">
+            {% if hero_props.0 %}
+              <span class="block">{{ hero_props.0.title }}</span>
+              <span class="block [text-wrap:balance]">{{ hero_props.0.city }}</span>
             {% else %}
-                <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Placeholder" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <span class="block">PropNest</span>
+              <span class="block [text-wrap:balance]">Aleya</span>
             {% endif %}
-
-            <div class="absolute top-4 left-4 {% if property.listing_type == 'rent' %}bg-green-500{% else %}bg-indigo-600{% endif %} text-white text-xs font-bold px-3 py-1 rounded">
-                {{ property.get_listing_type_display }}
-            </div>
-
-            <div class="absolute bottom-4 right-4 bg-gray-900 bg-opacity-70 text-white text-sm font-bold px-3 py-1 rounded">
-                ${{ property.price }}{% if property.listing_type == 'rent' %} / mo{% endif %}
-            </div>
+          </p>
+          <a class="pointer-events-auto group mt-4 inline-flex items-center gap-3 text-[14.5px] text-[var(--g2-sand)] md:mt-7 md:text-[16px]"
+             href="{% if hero_props.0 %}{% url 'property_detail' hero_props.0.id %}{% else %}{% url 'property_list' %}{% endif %}">
+            <span class="h-[7px] w-[7px] shrink-0 rounded-full bg-[var(--g2-gold)]" aria-hidden="true"></span>
+            <span class="underline-offset-[6px] group-hover:underline">View residence</span>
+            <svg viewBox="0 0 24 24" class="h-[15px] w-[15px] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M7 17 17 7M9 7h8v8"></path>
+            </svg>
+          </a>
         </div>
-        
-        <div class="p-6">
-            <p class="text-sm text-indigo-600 font-semibold mb-1">{{ property.property_type.get_name_display }}</p>
-            
-            <h3 class="text-xl font-bold text-gray-800 mb-2 truncate">{{ property.title }}</h3>
-            
-            <p class="text-gray-600 text-sm mb-4"><i class="fa-solid fa-location-dot mr-2"></i>{{ property.location }}, {{ property.city }}</p>
-            
-            <hr class="border-gray-200 mb-4">
-            
-            <div class="flex justify-between text-gray-600 text-sm">
-            
-            {% if property.bedrooms %}
-            <span><i class="fa-solid fa-bed mr-2 text-gray-400"></i>{{ property.bedrooms }} Beds</span>
-            {% endif %}
-            
-            {% if property.bathrooms %}
-            <span><i class="fa-solid fa-bath mr-2 text-gray-400"></i>{{ property.bathrooms }} Baths</span>
-            {% endif %}
-            
-            <span><i class="fa-solid fa-vector-square mr-2 text-gray-400"></i>{{ property.area_sqft }} sqft</span>
-            
-            </div>
-        </div>
-        
-        </div>
-        {% endfor %}
 
-      </div>
-      
-      <!-- View All Button -->
-      <div class="text-center mt-10">
-        <a href="#" class="inline-block bg-white text-brand border border-brand font-bold py-3 px-8 rounded-lg hover:bg-brand hover:text-white transition shadow-sm text-decoration-none">
-          Browse All Properties
+        <!-- Bottom-Right Featured Residence Card -->
+        <a aria-label="Open {% if hero_props.0 %}{{ hero_props.0.title }}{% else %}PropNest Residence{% endif %}"
+           class="group absolute bottom-6 right-6 z-40 hidden w-[292px] overflow-hidden rounded-[18px] shadow-[0_30px_80px_-26px_rgba(0,0,0,0.9)] ring-1 ring-white/15 md:bottom-8 md:right-9 md:block"
+           href="{% if hero_props.0 %}{% url 'property_detail' hero_props.0.id %}{% else %}{% url 'property_list' %}{% endif %}">
+          <div style="--g2-src-sm: url('{% if hero_props.0 %}{{ hero_props.0.hero_card_url }}{% else %}{% static 'assets/menu-0.avif' %}{% endif %}'); --g2-src-lg: url('{% if hero_props.0 %}{{ hero_props.0.hero_card_url }}{% else %}{% static 'assets/menu-0.avif' %}{% endif %}');"
+               class="g2-bg aspect-[4/3] w-full bg-cover bg-center transition-transform duration-[900ms] ease-out group-hover:scale-[1.06]"></div>
+          <div class="pointer-events-none absolute inset-x-0 bottom-0 h-[74%]" style="background:linear-gradient(to top, rgba(6,14,22,0.95) 0%, rgba(6,14,22,0.9) 46%, rgba(6,14,22,0.5) 74%, transparent 100%)" aria-hidden="true"></div>
+          <div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-[18px]">
+            <div class="min-w-0">
+              <p class="text-[10.5px] font-medium tracking-[0.3em] text-[var(--g2-gold)]">FEATURED</p>
+              <span class="mt-2.5 block h-px w-7 bg-[var(--g2-gold)]" aria-hidden="true"></span>
+              <p class="g2-display mt-2.5 truncate text-[19px] font-light leading-tight tracking-[-0.01em] text-white">
+                {% if hero_props.0 %}{{ hero_props.0.title }}{% else %}PropNest Aleya{% endif %}
+              </p>
+              <p class="mt-1 truncate text-[11.5px] tracking-[0.2em] text-white/55">
+                {% if hero_props.0 %}{{ hero_props.0.city|upper }}{% else %}DHAKA{% endif %}
+              </p>
+            </div>
+            <span class="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full ring-1 ring-white/35 transition-colors duration-300 group-hover:bg-[var(--g2-gold)] group-hover:ring-[var(--g2-gold)]" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="h-[15px] w-[15px] text-white" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 17 17 7M9 7h8v8"></path></svg>
+            </span>
+          </div>
         </a>
-      </div>
-    </section>
 
-    <!-- ======================= -->
-    <!-- WHY CHOOSE US SECTION   -->
-    <!-- ======================= -->
-    <section class="bg-gray-100 py-16">
-      <div class="max-w-7xl mx-auto px-4">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl font-bold text-gray-800 mb-4">Why Choose PropNest?</h2>
-          <p class="text-gray-600">We provide a seamless and secure experience for buyers, renters, and agents.</p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-          <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-            <div class="w-16 h-16 bg-indigo-100 text-brand rounded-full flex items-center justify-center mx-auto text-2xl mb-6">
-              <i class="fa-solid fa-magnifying-glass-location"></i>
+        <!-- Bottom-Left Carousel Playback Controls + Progress Bar -->
+        <div class="pointer-events-none absolute inset-x-0 bottom-6 z-40 flex justify-start px-6 md:bottom-8 md:px-9">
+          <div class="pointer-events-auto flex items-center gap-5 max-md:w-full max-md:gap-3">
+            <button type="button" aria-pressed="false" aria-label="Pause the poster slideshow" class="g2-round backdrop-blur">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M6 4.5h4v15H6zm8 0h4v15h-4z"></path></svg>
+            </button>
+            <div class="flex gap-2">
+              <button type="button" aria-label="Previous project" class="g2-round backdrop-blur">
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9H4"></path><path d="M8 5L4 9l4 4"></path></svg>
+              </button>
+              <button type="button" aria-label="Next project" class="g2-round backdrop-blur">
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h10"></path><path d="M10 5l4 4-4 4"></path></svg>
+              </button>
             </div>
-            <h3 class="text-xl font-bold text-gray-800 mb-3">Easy Filtering</h3>
-            <p class="text-gray-600">Find exactly what you're looking for with our advanced search and custom filters.</p>
-          </div>
-          
-          <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-            <div class="w-16 h-16 bg-indigo-100 text-brand rounded-full flex items-center justify-center mx-auto text-2xl mb-6">
-              <i class="fa-solid fa-calendar-check"></i>
+            <div class="relative max-md:min-w-0 max-md:flex-1">
+              <div class="flex gap-1.5 max-md:min-w-0 max-md:flex-1 max-md:gap-1">
+                <button type="button" aria-label="Go to {% if hero_props.0 %}{{ hero_props.0.title }}{% else %}Slide 1{% endif %}" aria-pressed="true" class="h-0.5 rounded-full transition-all duration-500 max-md:w-auto! max-md:min-w-[14px] max-md:flex-[2.5_1_0]" style="width: 40px; background: var(--g2-gold);"></button>
+                <button type="button" aria-label="Go to {% if hero_props.1 %}{{ hero_props.1.title }}{% else %}Slide 2{% endif %}" aria-pressed="false" class="h-0.5 rounded-full transition-all duration-500 max-md:w-auto! max-md:min-w-[4px] max-md:flex-[1_1_0]" style="width: 18px; background: color-mix(in srgb, var(--g2-sand) 40%, transparent);"></button>
+              </div>
+              <div aria-hidden="true" class="absolute inset-x-0 top-full mt-2.5 h-0.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--g2-sand)_18%,transparent)]">
+                <div class="g2-dwell h-full w-full origin-left rounded-full bg-[var(--g2-gold)]" style="animation-duration: 5200ms;"></div>
+              </div>
             </div>
-            <h3 class="text-xl font-bold text-gray-800 mb-3">Instant Tour Booking</h3>
-            <p class="text-gray-600">Schedule property tours instantly from your dashboard and get agent confirmations.</p>
-          </div>
-
-          <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-            <div class="w-16 h-16 bg-indigo-100 text-brand rounded-full flex items-center justify-center mx-auto text-2xl mb-6">
-              <i class="fa-solid fa-shield-halved"></i>
-            </div>
-            <h3 class="text-xl font-bold text-gray-800 mb-3">Trusted Agents</h3>
-            <p class="text-gray-600">All properties are listed by verified agents, ensuring a safe and scam-free process.</p>
+            <span class="g2-kicker hidden tabular-nums text-[var(--g2-sand-dim)] sm:block">01 / 02</span>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </div>
+</section>
 
-    <!-- ======================= -->
-    <!-- CALL TO ACTION (CTA)    -->
-    <!-- ======================= -->
-    <section class="bg-brand py-16">
-      <div class="max-w-4xl mx-auto px-4 text-center">
-        <h2 class="text-3xl font-bold text-white mb-6">Are You a Real Estate Agent?</h2>
-        <p class="text-indigo-100 mb-8 text-lg">Join thousands of agents who are successfully growing their business using PropNest. List your properties and reach millions of buyers today.</p>
-        <button class="bg-white text-brand font-bold py-3 px-8 rounded-lg hover:bg-gray-100 transition shadow-lg">
-          Become an Agent
-        </button>
+<!-- 2. SAND ARCHITECTURAL MARQUEE TICKER -->
+<section data-g2-section="marquee" aria-label="What PropNest Real Estate promises" class="relative w-full overflow-hidden bg-[var(--g2-sand)] py-4 md:py-5 g2-offscreen">
+  <div class="g2-marquee flex w-max">
+    <div class="flex shrink-0 items-center">
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Architectural Precision</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Uncompromising Safety</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Verified Ownership</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Licensed Advisors</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Prime Locations</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Private Tour Concierge</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+    </div>
+    <div class="flex shrink-0 items-center" aria-hidden="true">
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Architectural Precision</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Uncompromising Safety</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Verified Ownership</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Licensed Advisors</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Prime Locations</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+      <span class="flex shrink-0 items-center"><span class="g2-kicker whitespace-nowrap px-7 text-[var(--g2-ink)] md:px-10">Private Tour Concierge</span><svg aria-hidden="true" width="9" height="9" viewBox="0 0 9 9" fill="none" class="shrink-0 text-[var(--g2-ember)]"><circle cx="4.5" cy="4.5" r="3.4" stroke="currentColor" stroke-width="1.5"></circle></svg></span>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Architectural Search Strip (Clean Single Bar Below Ticker) -->
+<section aria-label="Search Residences" class="border-b border-[var(--g2-line)] bg-[var(--g2-ink-2)] px-6 md:px-[7vw]" style="padding-block: 1.5rem;">
+  <search class="pn-container" style="padding-inline:0;">
+    <form method="GET" action="{% url 'property_list' %}" class="pn-filter-grid">
+      <div class="pn-field" style="margin:0;">
+        <label for="home-search-q" class="pn-label">City, District or Residence</label>
+        <input id="home-search-q" type="search" name="search" class="pn-input" placeholder="Dhaka, Rajshahi, Khulna, Villa...">
       </div>
-    </section>
+      <div class="pn-field" style="margin:0;">
+        <label for="home-search-listing" class="pn-label">Acquisition Type</label>
+        <select id="home-search-listing" name="listing_type" class="pn-select">
+          <option value="">All Listings</option>
+          <option value="sale">For Sale</option>
+          <option value="rent">For Rent</option>
+        </select>
+      </div>
+      <div class="pn-field" style="margin:0;">
+        <label for="home-search-type" class="pn-label">Architecture Category</label>
+        <select id="home-search-type" name="property_type" class="pn-select">
+          <option value="">All Types</option>
+          {% for pt in property_types %}
+            <option value="{{ pt.id }}">{{ pt.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="pn-field" style="margin:0;">
+        <button type="submit" class="pn-btn pn-btn-primary w-full" style="min-height:46px;">Search Portfolio →</button>
+      </div>
+    </form>
+  </search>
+</section>
+
+<!-- 3. STORY SECTION (Exact Crosshair Blueprint Grid + Rotating Chevron Cutout) -->
+<section data-g2-section="story" class="relative h-[280vh] w-full select-none bg-[var(--g2-ink)]">
+  <div class="sticky top-0 flex h-screen w-full flex-col justify-end overflow-hidden px-6 py-10 sm:px-10 md:px-[6vw] md:py-14">
+    <svg aria-hidden="true" class="pointer-events-none absolute inset-0 h-full w-full opacity-15">
+      <defs>
+        <pattern id="g2-reveal-grid" width="120" height="120" patternUnits="userSpaceOnUse">
+          <path d="M 60 54 L 60 66 M 54 60 L 66 60" stroke="var(--g2-gold)" stroke-width="0.75"></path>
+          <circle cx="60" cy="60" r="1.5" fill="none" stroke="var(--g2-gold)" stroke-width="0.5"></circle>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#g2-reveal-grid)"></rect>
+    </svg>
+
+    <!-- Phase 1 Top/Bottom Editorial Overlay -->
+    <div class="pointer-events-none absolute inset-0 z-30 flex flex-col justify-between px-6 pb-10 pt-24 sm:px-10 md:px-[6vw] md:pt-32" style="opacity: 1; transform: none;">
+      <div class="relative z-10 w-fit max-w-[46vw]">
+        <h2 class="g2-headline font-semibold uppercase tracking-[-0.04em] text-[var(--g2-sand)]" style="font-size:clamp(4rem, 12vw, 13rem);line-height:0.72">
+          STORY<span class="text-[var(--g2-gold)]">.</span>
+        </h2>
+      </div>
+      <div class="relative max-w-xs">
+        <span aria-hidden="true" class="absolute inset-y-0 left-0 w-px bg-[var(--g2-gold)]"></span>
+        <span aria-hidden="true" class="absolute bottom-0 left-0 h-px w-2/3 bg-[var(--g2-gold)]"></span>
+        <p class="relative z-10 select-none py-4 pl-6 pr-4 font-[family-name:var(--font-golpo)] text-base font-medium uppercase leading-snug tracking-[0.16em] text-[var(--g2-sand)] sm:text-lg md:text-xl lg:text-2xl">
+          <span>Architecture as</span><span><br>living narrative</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Revealed Statement Behind Chevron Mask -->
+    <div class="relative z-10 flex flex-1 items-center">
+      <h2 class="g2-headline font-semibold uppercase leading-[0.86] tracking-[-0.04em] text-[var(--g2-sand)]" style="font-size:clamp(2.6rem, 9vw, 8.5rem)">
+        EVERY BUILDING<br>BEGINS AS A STORY<span class="text-[var(--g2-ember)]">.</span>
+      </h2>
+    </div>
+
+    <!-- Rotating Chevron Aperture SVG -->
+    <svg id="g2-story-mark-svg" aria-hidden="true" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice" class="pointer-events-none absolute inset-0 z-20 h-full w-full" style="opacity: 1;">
+      <defs>
+        <mask id="g2-mark-hole">
+          <rect x="-600" y="-400" width="2200" height="1800" fill="white"></rect>
+          <g style="transform-box: fill-box; transform-origin: 50% 50%; transform: none;">
+            <polygon points="315,590 500,405 685,590" fill="black"></polygon>
+            <g fill="none" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="26">
+              <path d="M 300 595 L 500 395 L 700 595"></path>
+              <path d="M 358 572 L 500 430 L 642 572"></path>
+              <path d="M 416 548 L 500 464 L 584 548"></path>
+            </g>
+          </g>
+        </mask>
+      </defs>
+      <rect x="-600" y="-400" width="2200" height="1800" fill="var(--g2-ink)" mask="url(#g2-mark-hole)"></rect>
+      <g style="transform-box: fill-box; transform-origin: 50% 50%; transform: none;" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" vector-effect="non-scaling-stroke">
+        <path d="M 300 595 L 500 395 L 700 595" stroke="var(--g2-ember)"></path>
+        <path d="M 358 572 L 500 430 L 642 572" stroke="var(--g2-ember)"></path>
+        <path d="M 416 548 L 500 464 L 584 548" stroke="var(--g2-ember)"></path>
+      </g>
+    </svg>
+
+    <!-- Bottom Border Foundation Narrative -->
+    <div class="relative z-30 grid gap-4 border-t border-[var(--g2-line)] pt-6 md:grid-cols-[0.4fr_1fr] md:gap-10" style="opacity: 0; transform: translateY(26px);">
+      <p class="g2-kicker flex items-center gap-3 text-[var(--g2-gold)]">
+        <span class="h-1.5 w-1.5 rounded-full bg-[var(--g2-gold)]"></span>Our foundation
+      </p>
+      <p class="max-w-[62ch] border-[var(--g2-line)] leading-relaxed text-[var(--g2-sand-dim)] md:border-l md:pl-10">
+        PropNest Real Estate curates architectural residences, commercial landmarks, and private estates across Bangladesh. Every listing balances daylight geometry, verified title stewardship, and direct licensed advisory.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. PORTFOLIO HORIZONTAL INFINITE RAIL (#portfolio) -->
+<section id="portfolio" class="relative scroll-mt-20 overflow-hidden py-24 md:scroll-mt-28 md:py-32">
+  <div class="mb-10 px-6 md:mb-14 md:px-[7vw]">
+    <div style="container-type:inline-size;width:100%">
+      <h2 class="g2-display leading-[0.82]" style="font-weight:600">
+        <span class="sr-only">PORTFOLIO</span>
+        <span aria-hidden="true" class="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0"><span class="relative inline-block whitespace-nowrap" style="font-size:216px;"><span class="inline-block">P</span><span class="inline-block">O</span><span class="inline-block">R</span><span class="inline-block">T</span><span class="inline-block">F</span><span class="inline-block">O</span><span class="inline-block">L</span><span class="inline-block">I</span><span class="inline-block">O</span></span></span>
+        <span aria-hidden="true" class="relative inline-block whitespace-nowrap" style="font-size:216px;">
+          <span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">P</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">O</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">R</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">T</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">F</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">O</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">L</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">I</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">O</span></span>
+        </span>
+      </h2>
+    </div>
+  </div>
+
+  <div class="mb-10 flex items-end justify-between gap-6 px-6 md:mb-14 md:px-[7vw]">
+    <div style="opacity: 1; transform: none;">
+      <h3 class="g2-display" style="font-size:clamp(1.15rem, 2.2vw, 1.9rem)">Every address, end to end.</h3>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <a href="{% url 'property_list' %}" class="g2-nav hidden text-[var(--g2-gold)] hover:text-[var(--g2-sand)] sm:block" style="margin-right:0.75rem;font-size:0.74rem;">View all ({{ available_count }}) →</a>
+      <button type="button" aria-pressed="false" aria-label="Pause the portfolio rail" class="g2-round">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M6 4.5h4v15H6zm8 0h4v15h-4z"></path></svg>
+      </button>
+      <button type="button" aria-label="Previous projects" class="g2-round">←</button>
+      <button type="button" aria-label="Next projects" class="g2-round">→</button>
+    </div>
+  </div>
+
+  <div class="cursor-grab touch-pan-y active:cursor-grabbing" data-lenis-prevent-horizontal="" style="overscroll-behavior:auto">
+    <div class="flex w-max gap-6" style="will-change:transform;">
+      {% for prop in properties %}
+        <a draggable="false" class="group w-[68vw] shrink-0 sm:w-[42vw] lg:w-[24vw]" href="{% url 'property_detail' prop.id %}">
+          <figure>
+            <div class="relative overflow-hidden" style="will-change: transform;">
+              <div style="--g2-src-sm:url('{{ prop.display_img_url }}');--g2-src-lg:url('{{ prop.display_img_url }}')"
+                   class="g2-bg aspect-[4/5] w-full bg-cover bg-center transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]"></div>
+            </div>
+            <figcaption class="mt-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+              <span class="truncate text-sm text-[var(--g2-sand)]">{{ prop.title }}</span>
+              <span class="g2-kicker shrink-0 text-[var(--g2-sand-dim)]">{{ prop.city }} · ${{ prop.price|floatformat:0 }}</span>
+            </figcaption>
+          </figure>
+        </a>
+      {% endfor %}
+
+      {% for prop in properties %}
+        <a draggable="false" aria-hidden="true" tabindex="-1" class="group w-[68vw] shrink-0 sm:w-[42vw] lg:w-[24vw]" href="{% url 'property_detail' prop.id %}">
+          <figure>
+            <div class="relative overflow-hidden" style="will-change: transform;">
+              <div style="--g2-src-sm:url('{{ prop.display_img_url }}');--g2-src-lg:url('{{ prop.display_img_url }}')"
+                   class="g2-bg aspect-[4/5] w-full bg-cover bg-center transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]"></div>
+            </div>
+            <figcaption class="mt-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+              <span class="truncate text-sm text-[var(--g2-sand)]">{{ prop.title }}</span>
+              <span class="g2-kicker shrink-0 text-[var(--g2-sand-dim)]">{{ prop.city }} · ${{ prop.price|floatformat:0 }}</span>
+            </figcaption>
+          </figure>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- 5. FULL-BLEED INTERACTIVE MERCATOR LOCATIONS SECTION (#locations) -->
+<section id="locations" class="relative z-10 scroll-mt-20 overflow-hidden pb-6 pt-24 md:scroll-mt-28 md:pb-8 md:pt-32">
+  <div class="mb-10 px-6 md:mb-14 md:px-[7vw]">
+    <div style="container-type:inline-size;width:100%">
+      <h2 class="g2-display leading-[0.82]" style="font-weight:600">
+        <span class="sr-only">LOCATIONS</span>
+        <span aria-hidden="true" class="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0"><span class="relative inline-block whitespace-nowrap" style="font-size:213px;"><span class="inline-block">L</span><span class="inline-block">O</span><span class="inline-block">C</span><span class="inline-block">A</span><span class="inline-block">T</span><span class="inline-block">I</span><span class="inline-block">O</span><span class="inline-block">N</span><span class="inline-block">S</span></span></span>
+        <span aria-hidden="true" class="relative inline-block whitespace-nowrap" style="font-size:213px;">
+          <span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">L</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">O</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">C</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">A</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">T</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">I</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">O</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">N</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">S</span></span>
+        </span>
+      </h2>
+    </div>
+  </div>
+
+  <div class="mb-10 px-6 md:mb-14 md:px-[7vw]">
+    <div style="opacity: 1; transform: none;">
+      <h3 class="g2-display" style="font-size:clamp(1.15rem, 2.2vw, 1.9rem)">Where every address <span class="g2-heavy">stands</span>.</h3>
+    </div>
+  </div>
+
+  <div class="relative h-[62vh] min-h-[420px] md:h-[86vh] md:min-h-[560px]">
+    <div class="isolate overflow-hidden bg-[#0d3a5e] absolute inset-0">
+      <iframe title="Map of PropNest residences on Google Maps"
+              src="https://maps.google.com/maps?ll=23.777681,90.389288&amp;z=13&amp;t=m&amp;hl=en&amp;output=embed"
+              class="pointer-events-none absolute left-0 top-0 border-0"
+              loading="lazy" tabindex="-1" aria-hidden="true"
+              style="width: 1430px; height: 774px; transform: scale(1); transform-origin: 0px 0px; filter: grayscale(1) invert(1) contrast(1.1);"></iframe>
+      <div class="pointer-events-none absolute inset-0 bg-[#0d3a5e] mix-blend-screen"></div>
+      <div class="pointer-events-none absolute inset-x-0 top-0 h-[16%] bg-gradient-to-b from-[var(--g2-ink)] to-transparent"></div>
+      <div class="pointer-events-none absolute inset-x-0 bottom-0 h-[16%]" style="background: linear-gradient(to top, color-mix(in srgb, var(--g2-ink) 72%, transparent), transparent);"></div>
+
+      {% for item in map_items %}
+        <a href="{{ item.url }}" data-href="{{ item.url }}" aria-label="{{ item.property.title }} in {{ item.property.city }}" class="g2-pin" style="position: absolute; display: block; width: 28px; height: 38px;">
+          <span class="g2-pin__tag">{{ item.property.title }}</span>
+          <svg viewBox="0 0 28 38" aria-hidden="true">
+            <path d="M14 0C6.27 0 0 6.1 0 13.63 0 23.85 14 38 14 38s14-14.15 14-24.37C28 6.1 21.73 0 14 0Z"></path>
+            <circle cx="14" cy="13.5" r="4.6"></circle>
+          </svg>
+        </a>
+      {% endfor %}
+    </div>
+
+    <!-- Left Scrim & Overlaid Uppercase Address List on Desktop -->
+    <div class="pointer-events-none absolute inset-y-0 left-0 hidden w-[58%] bg-gradient-to-r from-[var(--g2-ink)] via-[var(--g2-ink)]/80 to-transparent md:block"></div>
+    <div class="absolute inset-y-0 left-0 hidden px-[7vw] py-[9%] md:block" style="max-width:44vw;">
+      <ul class="flex flex-col gap-2 md:h-full md:justify-evenly md:gap-0">
+        {% for item in map_items %}
+          <li class="flex flex-col">
+            <a data-pin-key="{{ item.key }}"
+               class="g2-display whitespace-nowrap uppercase leading-[1.05] tracking-[0.01em] transition-colors duration-300 text-[var(--g2-gold)] hover:text-[var(--g2-sand)]"
+               style="font-size:clamp(1.35rem, 2.3vw, 2.75rem);font-weight:300"
+               href="{{ item.url }}">
+              {{ item.property.title }}
+            </a>
+            <span class="g2-kicker whitespace-nowrap text-[var(--g2-sand-dim)]" style="margin-top:0.2rem;">{{ item.property.location|truncatewords:3 }} · {{ item.property.city }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Mobile Overlaid Address List Below Map -->
+  <div class="mt-8 px-6 md:hidden">
+    <ul class="flex flex-col gap-2">
+      {% for item in map_items %}
+        <li class="flex flex-wrap items-baseline gap-x-4">
+          <a data-pin-key="{{ item.key }}"
+             class="g2-display whitespace-nowrap uppercase leading-[1.05] tracking-[0.01em] transition-colors duration-300 text-[var(--g2-gold)] hover:text-[var(--g2-sand)]"
+             style="font-size:clamp(1.4rem, 2.7vw, 3.2rem);font-weight:300"
+             href="{{ item.url }}">
+            {{ item.property.title }}
+          </a>
+          <span class="g2-kicker whitespace-nowrap text-[var(--g2-sand-dim)]">{{ item.property.city }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+<!-- 6. 3D WEBGL TOWER ARCHITECTURAL SCALE SECTION (Exact Radial Glow + Side Floating Counters) -->
+<section data-g2-section="tower" class="relative h-[220vh]" style="--g2-tower-halo: 0.45; background: linear-gradient(to bottom, var(--g2-ink) 0, var(--g2-tower-ground, #071b30) 30vh, var(--g2-tower-ground, #071b30) calc(100% - 30vh), var(--g2-ink) 100%);">
+  <div class="sticky top-0 flex h-screen items-center overflow-hidden">
+    <div class="absolute inset-0" style="mask-image: linear-gradient(rgb(0, 0, 0) 0%, rgb(0, 0, 0) 82%, transparent 100%); background: radial-gradient(ellipse 24% 30% at 50% 78%, rgba(255,150,60,0.45), transparent 72%), radial-gradient(ellipse 34% 60% at 50% 50%, rgba(60,150,255,calc(0.45 * var(--g2-tower-halo, 1))), transparent 75%), radial-gradient(ellipse 70% 90% at 50% 50%, rgba(34,96,150,calc(0.6 * var(--g2-tower-halo, 1))), transparent 75%); opacity: 1;">
+      <div aria-hidden="true" class="g2-display pointer-events-none absolute inset-x-0 top-0 select-none whitespace-nowrap text-center uppercase text-[var(--g2-sand)]" style="font-size: 100px; font-weight: 600; line-height: 0.82;">
+        <span>{% if hero_props.0 %}{{ hero_props.0.city|default:"Dhaka" }}{% else %}Dhaka{% endif %}</span>
+      </div>
+      <canvas class="absolute inset-0 h-full w-full"></canvas>
+    </div>
+
+    <!-- Left 2 Floating Architectural Counters -->
+    <div class="pointer-events-none absolute bottom-0 left-[9vw] top-[43vh] z-20 flex w-[23vw] flex-col justify-start gap-[7vh] md:left-[10vw] md:justify-center md:top-[calc(84px+10.7vw)] md:w-[15vw] md:gap-[14vh] lg:left-[15vw]">
+      <div class="min-w-0 [text-shadow:0_0_4px_var(--g2-ink),0_0_10px_var(--g2-ink),0_0_18px_var(--g2-ink)]" style="margin-top: 0px; opacity: 0; transform: translateY(-18px);">
+        <p class="g2-display text-[var(--g2-sand)] [--stat-fs:clamp(2rem,10vw,3.2rem)] md:[--stat-fs:clamp(1.15rem,4.4vw,3.2rem)]" style="font-size:calc(var(--stat-fs) * 1);font-weight:500">
+          <span class="tabular-nums"><span>{{ total_properties }}</span>+</span>
+        </p>
+        <p class="mt-1 min-h-[3lh] whitespace-pre-line md:min-h-[2lh] text-[0.78rem] leading-snug text-[var(--g2-sand-dim)] md:text-sm">Curated Listings</p>
+      </div>
+      <div class="min-w-0 [text-shadow:0_0_4px_var(--g2-ink),0_0_10px_var(--g2-ink),0_0_18px_var(--g2-ink)]" style="margin-top: 0px; opacity: 0; transform: translateY(-18px);">
+        <p class="g2-display text-[var(--g2-sand)] [--stat-fs:clamp(2rem,10vw,3.2rem)] md:[--stat-fs:clamp(1.15rem,4.4vw,3.2rem)]" style="font-size:calc(var(--stat-fs) * 1);font-weight:500">
+          <span class="tabular-nums"><span>{{ available_count }}</span></span>
+        </p>
+        <p class="mt-1 min-h-[3lh] whitespace-pre-line md:min-h-[2lh] text-[0.78rem] leading-snug text-[var(--g2-sand-dim)] md:text-sm">Available Now</p>
+      </div>
+    </div>
+
+    <!-- Right 2 Floating Architectural Counters -->
+    <div class="pointer-events-none absolute bottom-0 right-[9vw] top-[43vh] z-20 flex w-[23vw] flex-col justify-start gap-[7vh] text-right md:right-[10vw] md:justify-center md:top-[calc(84px+10.7vw)] md:w-[15vw] md:gap-[14vh] lg:right-[15vw]">
+      <div class="min-w-0 [text-shadow:0_0_4px_var(--g2-ink),0_0_10px_var(--g2-ink),0_0_18px_var(--g2-ink)]" style="margin-top: 0px; opacity: 0; transform: translateY(-18px);">
+        <p class="g2-display text-[var(--g2-sand)] [--stat-fs:clamp(2rem,10vw,3.2rem)] md:[--stat-fs:clamp(1.15rem,4.4vw,3.2rem)]" style="font-size:calc(var(--stat-fs) * 1);font-weight:500">
+          <span class="tabular-nums"><span>{{ cities_count }}</span></span>
+        </p>
+        <p class="mt-1 min-h-[3lh] whitespace-pre-line md:min-h-[2lh] text-[0.78rem] leading-snug text-[var(--g2-sand-dim)] md:text-sm">Active Cities
+Across Districts</p>
+      </div>
+      <div class="min-w-0 [text-shadow:0_0_4px_var(--g2-ink),0_0_10px_var(--g2-ink),0_0_18px_var(--g2-ink)]" style="margin-top: 0px; opacity: 0; transform: translateY(-18px);">
+        <p class="g2-display text-[var(--g2-sand)] [--stat-fs:clamp(2rem,10vw,3.2rem)] md:[--stat-fs:clamp(1.15rem,4.4vw,3.2rem)]" style="font-size:calc(var(--stat-fs) * 1);font-weight:500">
+          <span class="tabular-nums"><span>{{ total_agents }}</span></span>
+        </p>
+        <p class="mt-1 min-h-[3lh] whitespace-pre-line md:min-h-[2lh] text-[0.78rem] leading-snug text-[var(--g2-sand-dim)] md:text-sm">Licensed Advisors</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. AMENITIES SINUOUS GOLDEN SNAKE PATH + ALTERNATING PILL PHOTOGRAPHY (#amenities) -->
+<section id="amenities" class="relative scroll-mt-20 px-6 py-24 md:scroll-mt-28 md:px-[7vw] md:py-32">
+  <div style="container-type:inline-size;width:100%">
+    <h2 class="g2-display leading-[0.82]" style="font-weight:600">
+      <span class="sr-only">AMENITIES</span>
+      <span aria-hidden="true" class="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0"><span class="relative inline-block whitespace-nowrap" style="font-size:234px;"><span class="inline-block">A</span><span class="inline-block">M</span><span class="inline-block">E</span><span class="inline-block">N</span><span class="inline-block">I</span><span class="inline-block">T</span><span class="inline-block">I</span><span class="inline-block">E</span><span class="inline-block">S</span></span></span>
+      <span aria-hidden="true" class="relative inline-block whitespace-nowrap" style="font-size:234px;">
+        <span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">A</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">M</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">E</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">N</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">I</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">T</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">I</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">E</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">S</span></span>
+      </span>
+    </h2>
+  </div>
+
+  <div class="mt-6" style="opacity: 1; transform: none;">
+    <h3 class="g2-display max-w-[18ch]" style="font-size:clamp(1.15rem, 2.2vw, 1.9rem)">Nobody remembers the floor area.</h3>
+  </div>
+
+  <ol class="relative mt-14 md:mt-24">
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+      <svg viewBox="0 0 1228 3223" preserveAspectRatio="none" class="h-full w-full overflow-visible text-[var(--g2-gold)]">
+        <path d="M 1202.0 0.0 L 1202.0 376.0 Q 1202.0 432.0, 1146.0 432.0 L 82.0 432.0 Q 26.0 432.0, 26.0 488.0 L 26.0 848.0 Q 26.0 904.0, 82.0 904.0 L 1146.0 904.0 Q 1202.0 904.0, 1202.0 960.0 L 1202.0 1319.0 Q 1202.0 1375.0, 1146.0 1375.0 L 82.0 1375.0 Q 26.0 1375.0, 26.0 1431.0 L 26.0 1791.0 Q 26.0 1847.0, 82.0 1847.0 L 1146.0 1847.0 Q 1202.0 1847.0, 1202.0 1903.0 L 1202.0 2263.0 Q 1202.0 2319.0, 1146.0 2319.0 L 82.0 2319.0 Q 26.0 2319.0, 26.0 2375.0 L 26.0 2735.0 Q 26.0 2791.0, 82.0 2791.0 L 1146.0 2791.0 Q 1202.0 2791.0, 1202.0 2847.0 L 1202.0 3223.0 Q 1202.0 3279.0, 1146.0 3279.0 L 0.0 3279.0" fill="none" stroke="currentColor" stroke-opacity="0.92" stroke-width="1.8" vector-effect="non-scaling-stroke" style="stroke-dasharray: 10851px; stroke-dashoffset: 10851px;"></path>
+      </svg>
+    </div>
+
+    <li class="grid grid-cols-1 items-center gap-y-7 md:grid-cols-12 md:gap-x-5 md:gap-y-0 lg:gap-x-10 xl:gap-x-12">
+      <div class="relative z-10 mr-auto w-[86%] md:col-span-7 md:col-start-1 md:row-start-1 md:mr-0 md:w-full">
+        <div data-panel="true" class="group relative aspect-[16/9] overflow-hidden rounded-full">
+          <div class="g2-bg h-full w-full bg-cover bg-center transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]" style="--g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-entrance-lobby.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-entrance-lobby.m.avif');"></div>
+        </div>
+      </div>
+      <div class="relative z-10 pr-[16%] md:col-span-4 md:col-start-9 md:row-start-1 md:pr-16">
+        <p class="g2-kicker text-[var(--g2-sand-dim)]">{% if properties.0 %}{{ properties.0.title }}{% else %}PropNest Signature{% endif %}</p>
+        <h4 class="g2-display mt-3 text-[var(--g2-sand)]" style="font-size:clamp(1.35rem, 2.1vw, 2.1rem)">Double-Height Entrance</h4>
+      </div>
+    </li>
+
+    <li class="grid grid-cols-1 items-center gap-y-7 md:grid-cols-12 md:gap-x-5 md:gap-y-0 lg:gap-x-10 xl:gap-x-12 mt-16 md:mt-20">
+      <div class="relative z-10 ml-auto w-[86%] md:col-span-7 md:col-start-6 md:row-start-1 md:ml-0 md:w-full">
+        <div data-panel="true" class="group relative aspect-[16/9] overflow-hidden rounded-full">
+          <div class="g2-bg h-full w-full bg-cover bg-center transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]" style="--g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/entrance.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/entrance.m.avif');"></div>
+        </div>
+      </div>
+      <div class="relative z-10 pl-[16%] md:col-span-4 md:col-start-1 md:row-start-1 md:pl-16 md:text-right">
+        <p class="g2-kicker text-[var(--g2-sand-dim)]">{% if properties.1 %}{{ properties.1.title }}{% else %}Private Arrival{% endif %}</p>
+        <h4 class="g2-display mt-3 text-[var(--g2-sand)]" style="font-size:clamp(1.35rem, 2.1vw, 2.1rem)">Concierge Reception</h4>
+      </div>
+    </li>
+
+    <li class="grid grid-cols-1 items-center gap-y-7 md:grid-cols-12 md:gap-x-5 md:gap-y-0 lg:gap-x-10 xl:gap-x-12 mt-16 md:mt-20">
+      <div class="relative z-10 mr-auto w-[86%] md:col-span-7 md:col-start-1 md:row-start-1 md:mr-0 md:w-full">
+        <div data-panel="true" class="group relative aspect-[16/9] overflow-hidden rounded-full">
+          <div class="g2-bg h-full w-full bg-cover bg-center transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]" style="--g2-src-sm: url('{% static 'assets/menu-0.avif' %}'); --g2-src-lg: url('{% static 'assets/menu-0.avif' %}');"></div>
+        </div>
+      </div>
+      <div class="relative z-10 pr-[16%] md:col-span-4 md:col-start-9 md:row-start-1 md:pr-16">
+        <p class="g2-kicker text-[var(--g2-sand-dim)]">{% if properties.2 %}{{ properties.2.city }}{% else %}Verified Dossiers{% endif %}</p>
+        <h4 class="g2-display mt-3 text-[var(--g2-sand)]" style="font-size:clamp(1.35rem, 2.1vw, 2.1rem)">Daylight Orientation</h4>
+      </div>
+    </li>
+
+    <li class="grid grid-cols-1 items-center gap-y-7 md:grid-cols-12 md:gap-x-5 md:gap-y-0 lg:gap-x-10 xl:gap-x-12 mt-16 md:mt-20">
+      <div class="relative z-10 ml-auto w-[86%] md:col-span-7 md:col-start-6 md:row-start-1 md:ml-0 md:w-full">
+        <div data-panel="true" class="group relative aspect-[16/9] overflow-hidden rounded-full">
+          <div class="g2-bg h-full w-full bg-cover bg-center transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]" style="--g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/facade-up.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/facade-up.m.avif');"></div>
+        </div>
+      </div>
+      <div class="relative z-10 pl-[16%] md:col-span-4 md:col-start-1 md:row-start-1 md:pl-16 md:text-right">
+        <p class="g2-kicker text-[var(--g2-sand-dim)]">PropNest Stewardship</p>
+        <h4 class="g2-display mt-3 text-[var(--g2-sand)]" style="font-size:clamp(1.35rem, 2.1vw, 2.1rem)">Planted Balconies</h4>
+      </div>
+    </li>
+
+    <li class="grid grid-cols-1 items-center gap-y-7 md:grid-cols-12 md:gap-x-5 md:gap-y-0 lg:gap-x-10 xl:gap-x-12 mt-16 md:mt-20">
+      <div class="relative z-10 mr-auto w-[86%] md:col-span-7 md:col-start-1 md:row-start-1 md:mr-0 md:w-full">
+        <div data-panel="true" class="group relative aspect-[16/9] overflow-hidden rounded-full">
+          <div class="g2-bg h-full w-full bg-cover bg-center transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]" style="--g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/balcony-gardens.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/balcony-gardens.m.avif');"></div>
+        </div>
+      </div>
+      <div class="relative z-10 pr-[16%] md:col-span-4 md:col-start-9 md:row-start-1 md:pr-16">
+        <p class="g2-kicker text-[var(--g2-sand-dim)]">Private Sanctuaries</p>
+        <h4 class="g2-display mt-3 text-[var(--g2-sand)]" style="font-size:clamp(1.35rem, 2.1vw, 2.1rem)">Skyline Balcony Gardens</h4>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<!-- 8. INTERIORS STAGGERED 3-COLUMN PARALLAX + FLOATING ZOOM LOUPES (#interiors) -->
+<section id="interiors" class="scroll-mt-20 px-6 py-24 md:scroll-mt-28 md:px-[7vw] md:py-32">
+  <div style="container-type:inline-size;width:100%">
+    <h2 class="g2-display leading-[0.82]" style="font-weight:600">
+      <span class="sr-only">INTERIORS</span>
+      <span aria-hidden="true" class="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0"><span class="relative inline-block whitespace-nowrap" style="font-size:238px;"><span class="inline-block">I</span><span class="inline-block">N</span><span class="inline-block">T</span><span class="inline-block">E</span><span class="inline-block">R</span><span class="inline-block">I</span><span class="inline-block">O</span><span class="inline-block">R</span><span class="inline-block">S</span></span></span>
+      <span aria-hidden="true" class="relative inline-block whitespace-nowrap" style="font-size:238px;">
+        <span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">I</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">N</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">T</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">E</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">R</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">I</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">O</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">R</span></span><span class="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-baseline" style="perspective:6em"><span class="inline-block origin-bottom will-change-transform">S</span></span>
+      </span>
+    </h2>
+  </div>
+
+  <h3 class="g2-display mt-6 max-w-[16ch]" style="font-size:clamp(1.15rem, 2.2vw, 1.9rem)">The part you actually <span class="g2-heavy">live in</span>.</h3>
+
+  <div class="mt-14 flex flex-col gap-9 md:mt-20 md:flex-row md:items-start md:gap-6">
+    <!-- Column 1 -->
+    <div class="flex flex-1 flex-col gap-9 md:gap-10 md:mt-0">
+      <div class="md:-ml-4">
+        <div class="relative">
+          <figure class="relative w-full overflow-hidden aspect-[4/5]">
+            <div class="absolute inset-x-0 -top-[8%] h-[116%]" style="will-change: transform;">
+              <div class="h-full w-full"><div class="g2-bg h-full w-full bg-cover bg-center" style="--g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-commercial-floor.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-commercial-floor.m.avif');"></div></div>
+            </div>
+            <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[var(--g2-ink)] via-[var(--g2-ink)]/50 to-transparent"></div>
+            <span class="g2-kicker absolute left-5 top-5 tabular-nums text-[var(--g2-gold)] md:left-6 md:top-6">01</span>
+            <figcaption class="absolute inset-x-0 bottom-0 p-5 md:p-6">
+              <p class="g2-kicker text-[var(--g2-gold)]">Architectural Floor</p>
+              <p class="g2-display mt-2 text-[var(--g2-sand)]" style="font-size:clamp(1.1rem, 1.8vw, 1.6rem)">Double-height floorplates</p>
+            </figcaption>
+          </figure>
+          <span aria-hidden="true" class="pointer-events-none absolute z-10 block overflow-hidden rounded-full shadow-[0_14px_40px_rgba(0,0,0,0.45)] ring-1 ring-[var(--g2-sand)]/25 top-[22%] h-16 w-16 md:h-24 md:w-24 -left-5 md:-left-10"><span style="background-size: 460% auto; background-position: 22% 84%; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-commercial-floor.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-commercial-floor.m.avif');" class="g2-bg block h-full w-full"></span></span>
+          <span aria-hidden="true" class="pointer-events-none absolute z-10 block overflow-hidden rounded-full shadow-[0_14px_40px_rgba(0,0,0,0.45)] ring-1 ring-[var(--g2-sand)]/25 top-[62%] h-12 w-12 md:h-16 md:w-16 -left-3 md:-left-6"><span style="background-size: 430% auto; background-position: 38% 92%; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-commercial-floor.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-commercial-floor.m.avif');" class="g2-bg block h-full w-full"></span></span>
+        </div>
+      </div>
+
+      <div class="md:-ml-4">
+        <div class="relative">
+          <figure class="relative w-full overflow-hidden aspect-[4/5]">
+            <div class="absolute inset-x-0 -top-[8%] h-[116%]" style="will-change: transform;">
+              <div class="h-full w-full"><div class="g2-bg h-full w-full bg-cover bg-center" style="--g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/phone/golpo-dar-e-salam-phone-interior-living.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/interior-living.m.avif');"></div></div>
+            </div>
+            <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[var(--g2-ink)] via-[var(--g2-ink)]/50 to-transparent"></div>
+            <span class="g2-kicker absolute left-5 top-5 tabular-nums text-[var(--g2-gold)] md:left-6 md:top-6">04</span>
+            <figcaption class="absolute inset-x-0 bottom-0 p-5 md:p-6">
+              <p class="g2-kicker text-[var(--g2-gold)]">Primary Residences</p>
+              <p class="g2-display mt-2 text-[var(--g2-sand)]" style="font-size:clamp(1.1rem, 1.8vw, 1.6rem)">Sunlit living salons</p>
+            </figcaption>
+          </figure>
+          <span aria-hidden="true" class="pointer-events-none absolute z-10 block overflow-hidden rounded-full shadow-[0_14px_40px_rgba(0,0,0,0.45)] ring-1 ring-[var(--g2-sand)]/25 top-[22%] h-16 w-16 md:h-24 md:w-24 -left-5 md:-left-10"><span style="background-size: 430% auto; background-position: 38% 92%; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/interior-living.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/interior-living.m.avif');" class="g2-bg block h-full w-full"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 2 (Offset +6vh on Desktop) -->
+    <div class="flex flex-1 flex-col gap-9 md:gap-10 md:mt-[6vh]">
+      <div>
+        <div class="relative">
+          <figure class="relative w-full overflow-hidden aspect-[4/3]">
+            <div class="absolute inset-x-0 -top-[8%] h-[116%]" style="will-change: transform;">
+              <div class="h-full w-full"><div class="g2-bg h-full w-full bg-cover bg-center" style="--g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/phone/golpo-dar-e-salam-phone-interior-dining.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/interior-dining.m.avif');"></div></div>
+            </div>
+            <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[var(--g2-ink)] via-[var(--g2-ink)]/50 to-transparent"></div>
+            <span class="g2-kicker absolute left-5 top-5 tabular-nums text-[var(--g2-gold)] md:left-6 md:top-6">02</span>
+            <figcaption class="absolute inset-x-0 bottom-0 p-5 md:p-6">
+              <p class="g2-kicker text-[var(--g2-gold)]">Culinary Atelier</p>
+              <p class="g2-display mt-2 text-[var(--g2-sand)]" style="font-size:clamp(1.1rem, 1.8vw, 1.6rem)">Dining &amp; stone kitchens</p>
+            </figcaption>
+          </figure>
+          <span aria-hidden="true" class="pointer-events-none absolute z-10 block overflow-hidden rounded-full shadow-[0_14px_40px_rgba(0,0,0,0.45)] ring-1 ring-[var(--g2-sand)]/25 top-[22%] h-16 w-16 md:h-24 md:w-24 -left-5 md:-left-10"><span style="background-size: 500% auto; background-position: 78% 88%; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/interior-dining.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/interior-dining.m.avif');" class="g2-bg block h-full w-full"></span></span>
+        </div>
+      </div>
+
+      <div>
+        <div class="relative">
+          <figure class="relative w-full overflow-hidden aspect-[4/3]">
+            <div class="absolute inset-x-0 -top-[8%] h-[116%]" style="will-change: transform;">
+              <div class="h-full w-full"><div class="g2-bg h-full w-full bg-cover bg-center" style="--g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-open-plan.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-open-plan.m.avif');"></div></div>
+            </div>
+            <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[var(--g2-ink)] via-[var(--g2-ink)]/50 to-transparent"></div>
+            <span class="g2-kicker absolute left-5 top-5 tabular-nums text-[var(--g2-gold)] md:left-6 md:top-6">05</span>
+            <figcaption class="absolute inset-x-0 bottom-0 p-5 md:p-6">
+              <p class="g2-kicker text-[var(--g2-gold)]">Spatial Freedom</p>
+              <p class="g2-display mt-2 text-[var(--g2-sand)]" style="font-size:clamp(1.1rem, 1.8vw, 1.6rem)">Open-plan galleries</p>
+            </figcaption>
+          </figure>
+          <span aria-hidden="true" class="pointer-events-none absolute z-10 block overflow-hidden rounded-full shadow-[0_14px_40px_rgba(0,0,0,0.45)] ring-1 ring-[var(--g2-sand)]/25 top-[22%] h-16 w-16 md:h-24 md:w-24 -left-5 md:-left-10"><span style="background-size: 520% auto; background-position: 62% 80%; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-open-plan.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-open-plan.m.avif');" class="g2-bg block h-full w-full"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 3 (Offset +2vh on Desktop) -->
+    <div class="flex flex-1 flex-col gap-9 md:gap-10 md:mt-[2vh]">
+      <div class="md:-mr-4">
+        <div class="relative">
+          <figure class="relative w-full overflow-hidden aspect-[4/5]">
+            <div class="absolute inset-x-0 -top-[8%] h-[116%]" style="will-change: transform;">
+              <div class="h-full w-full"><div class="g2-bg h-full w-full bg-cover bg-center" style="--g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-workspace.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-workspace.m.avif');"></div></div>
+            </div>
+            <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[var(--g2-ink)] via-[var(--g2-ink)]/50 to-transparent"></div>
+            <span class="g2-kicker absolute left-5 top-5 tabular-nums text-[var(--g2-gold)] md:left-6 md:top-6">03</span>
+            <figcaption class="absolute inset-x-0 bottom-0 p-5 md:p-6">
+              <p class="g2-kicker text-[var(--g2-gold)]">Executive Suite</p>
+              <p class="g2-display mt-2 text-[var(--g2-sand)]" style="font-size:clamp(1.1rem, 1.8vw, 1.6rem)">Acoustic workspaces</p>
+            </figcaption>
+          </figure>
+          <span aria-hidden="true" class="pointer-events-none absolute z-10 block overflow-hidden rounded-full shadow-[0_14px_40px_rgba(0,0,0,0.45)] ring-1 ring-[var(--g2-sand)]/25 top-[22%] h-16 w-16 md:h-24 md:w-24 -right-5 md:-right-10"><span style="background-size: 500% auto; background-position: 78% 88%; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-workspace.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-interior-workspace.m.avif');" class="g2-bg block h-full w-full"></span></span>
+        </div>
+      </div>
+
+      <div class="md:-mr-4">
+        <div class="relative">
+          <figure class="relative w-full overflow-hidden aspect-[3/4]">
+            <div class="absolute inset-x-0 -top-[8%] h-[116%]" style="will-change: transform;">
+              <div class="h-full w-full"><div class="g2-bg h-full w-full bg-cover bg-center" style="--g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/phone/golpo-dar-e-salam-phone-interior-living-2.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/interior-living-2.m.avif');"></div></div>
+            </div>
+            <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[var(--g2-ink)] via-[var(--g2-ink)]/50 to-transparent"></div>
+            <span class="g2-kicker absolute left-5 top-5 tabular-nums text-[var(--g2-gold)] md:left-6 md:top-6">06</span>
+            <figcaption class="absolute inset-x-0 bottom-0 p-5 md:p-6">
+              <p class="g2-kicker text-[var(--g2-gold)]">Corner Sanctuary</p>
+              <p class="g2-display mt-2 text-[var(--g2-sand)]" style="font-size:clamp(1.1rem, 1.8vw, 1.6rem)">Warm timber &amp; bronze</p>
+            </figcaption>
+          </figure>
+          <span aria-hidden="true" class="pointer-events-none absolute z-10 block overflow-hidden rounded-full shadow-[0_14px_40px_rgba(0,0,0,0.45)] ring-1 ring-[var(--g2-sand)]/25 top-[22%] h-16 w-16 md:h-24 md:w-24 -right-5 md:-right-10"><span style="background-size: 460% auto; background-position: 22% 84%; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/interior-living-2.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/interior-living-2.m.avif');" class="g2-bg block h-full w-full"></span></span>
+          <span aria-hidden="true" class="pointer-events-none absolute z-10 block overflow-hidden rounded-full shadow-[0_14px_40px_rgba(0,0,0,0.45)] ring-1 ring-[var(--g2-sand)]/25 top-[62%] h-12 w-12 md:h-16 md:w-16 -right-3 md:-right-6"><span style="background-size: 430% auto; background-position: 38% 92%; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/interior-living-2.m.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-dar-e-salam/interior-living-2.m.avif');" class="g2-bg block h-full w-full"></span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. EMBLEM SEAL SVG DRAWDOWN (Exact Double Gold Arcs + Circle Crest) -->
+<div data-g2-section="emblem" aria-hidden="true" class="pointer-events-none relative w-full overflow-hidden text-[var(--g2-gold)]" style="height:clamp(56vh, 38vw, 72vh)">
+  <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="absolute inset-0 h-full w-full">
+    <defs>
+      <linearGradient id="_R_pn_emblem_" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="currentColor" stop-opacity="0"></stop>
+        <stop offset="0.3" stop-color="currentColor" stop-opacity="0.88"></stop>
+        <stop offset="0.7" stop-color="currentColor" stop-opacity="0.88"></stop>
+        <stop offset="1" stop-color="currentColor" stop-opacity="0"></stop>
+      </linearGradient>
+    </defs>
+    <path d="M -6 -14 Q 50 46, 106 -14" fill="none" stroke="url(#_R_pn_emblem_)" stroke-width="2.2" vector-effect="non-scaling-stroke" style="stroke-dasharray: 1645.38px; stroke-dashoffset: 0px;"></path>
+    <path d="M -6 114 Q 50 54, 106 114" fill="none" stroke="url(#_R_pn_emblem_)" stroke-width="2.2" vector-effect="non-scaling-stroke" style="stroke-dasharray: 1645.38px; stroke-dashoffset: 0px;"></path>
+  </svg>
+  <div class="absolute inset-0 grid place-items-center">
+    <div class="relative aspect-square h-[70.8%] max-w-full">
+      <svg viewBox="0 0 100 100" class="absolute inset-0 h-full w-full text-[var(--g2-gold)]">
+        <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-opacity="0.85" stroke-width="1.6" vector-effect="non-scaling-stroke" style="stroke-dasharray: 1167.56px; stroke-dashoffset: 0px;"></circle>
+      </svg>
+      <div class="absolute inset-0 grid place-items-center px-[18%]" style="opacity: 1; transform: none;">
+        <svg viewBox="0 0 1000 580" class="w-full" role="img" aria-label="PropNest Real Estate">
+          <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="20">
+            <path d="M 328 296 L 500 124 L 672 296" stroke="#5d332d"></path>
+            <path d="M 378 276 L 500 154 L 622 276" stroke="#a04624"></path>
+            <path d="M 428 256 L 500 184 L 572 256" stroke="#f05a1a"></path>
+          </g>
+          <g fill="var(--g2-lockup-type)" class="transition-[fill] duration-700" font-family="'golpo', system-ui, -apple-system, sans-serif" text-anchor="middle">
+            <text x="514" y="424" font-size="92" font-weight="400" letter-spacing="28">PROPNEST</text>
+            <text x="513" y="514" font-size="22" font-weight="400" letter-spacing="26">REAL&#160;&#160;ESTATE</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 10. DAY-TO-NIGHT 7-STAGE ARCHITECTURAL STUDY -->
+<div data-g2-section="daynight">
+  <section class="relative" style="height:343vh;padding-left:calc(100vw - 100%)">
+    <div data-plate="true" class="sticky top-0 flex h-screen items-center justify-center overflow-hidden rounded-b-[40px] md:top-[var(--g2-rest)] md:h-[calc(100vh-var(--g2-rest))]" style="--g2-rest: 70px; --g2-r-lg: 1.7918; --g2-r-sm: 0.5581;">
+      <div class="relative aspect-[var(--g2-r-sm)] w-[min(100%,calc(100vh*var(--g2-r-sm)))] shrink-0 overflow-hidden rounded-[16px] md:aspect-[var(--g2-r-lg)] md:w-full md:rounded-none" style="clip-path: inset(0% 6% round 56px); transform: none;">
+        <div class="g2-bg absolute inset-0 bg-cover bg-center" style="--g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/phone/golpo-aleya-phone-day-06-noon.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/day-night/golpo-aleya-day-06-noon.avif');"></div>
+        <div class="g2-bg absolute inset-0 bg-cover bg-center" style="opacity: 0; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/phone/golpo-aleya-phone-day-07-afternoon.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/day-night/golpo-aleya-day-07-afternoon.avif');"></div>
+        <div class="g2-bg absolute inset-0 bg-cover bg-center" style="opacity: 0; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/phone/golpo-aleya-phone-day-08-golden.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/day-night/golpo-aleya-day-08-golden.avif');"></div>
+        <div class="g2-bg absolute inset-0 bg-cover bg-center" style="opacity: 0; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/phone/golpo-aleya-phone-day-09-sunset.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/day-night/golpo-aleya-day-09-sunset.avif');"></div>
+        <div class="g2-bg absolute inset-0 bg-cover bg-center" style="opacity: 0; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/phone/golpo-aleya-phone-day-10-bluehour.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/day-night/golpo-aleya-day-10-bluehour.avif');"></div>
+        <div class="g2-bg absolute inset-0 bg-cover bg-center" style="opacity: 0; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/phone/golpo-aleya-phone-day-11-dusk.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/day-night/golpo-aleya-day-11-dusk.avif');"></div>
+        <div class="g2-bg absolute inset-0 bg-cover bg-center" style="opacity: 0; --g2-src-sm: url('https://www.golpoholdings.com/golpo/golpo-aleya/phone/golpo-aleya-phone-day-12-night.avif'); --g2-src-lg: url('https://www.golpoholdings.com/golpo/golpo-aleya/day-night/golpo-aleya-day-12-night.avif');"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- 11. FLOATING EMBER CALL TO ACTION CARD OVERLAPPING FOOTER -->
+<section data-g2-section="cta" class="relative z-10 px-6 pt-8 md:px-10">
+  <div class="mx-auto max-w-[1760px] md:px-[calc(4vw-2.5rem)]" style="opacity: 1; transform: none;">
+    <div class="relative overflow-hidden rounded-[28px] px-8 py-16 text-center shadow-[0_40px_80px_-30px_rgba(0,0,0,0.5)] md:px-16 md:py-24" style="background: var(--g2-ember); transform: translateY(70px);">
+      <svg aria-hidden="true" viewBox="0 0 500 380" class="pointer-events-none absolute -left-24 -top-28 h-[420px] w-[420px]" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="22">
+        <path d="M 60 280 L 250 90 L 440 280" stroke="rgba(255,255,255,0.07)"></path>
+        <path d="M 115 256 L 250 121 L 385 256" stroke="rgba(255,255,255,0.10)"></path>
+        <path d="M 170 232 L 250 152 L 330 232" stroke="rgba(255,255,255,0.14)"></path>
+      </svg>
+      <div class="relative grid gap-12 md:grid-cols-2 md:gap-0">
+        <div class="md:border-r md:border-white/30 md:pr-12">
+          <p class="g2-kicker text-white/70">For buyers</p>
+          <h2 class="g2-display mx-auto mt-4 max-w-md text-white" style="font-size:clamp(1.6rem, 3vw, 2.6rem)">Looking for a home or an office?</h2>
+          <p class="mx-auto mt-4 max-w-sm text-white/75">Browse verified residences and workspaces across Bangladesh, and schedule a private tour directly with our advisors.</p>
+          <a class="mt-8 inline-block rounded-full bg-white px-8 py-4 text-sm font-medium text-[#0b2a47] transition-transform hover:scale-[1.03]" href="{% url 'property_list' %}">Explore residences</a>
+          <p class="mt-4 text-sm text-white/75">or <a href="tel:+8801337339933" class="text-white underline underline-offset-4 hover:no-underline">call concierge</a></p>
+        </div>
+        <div class="md:pl-12">
+          <p class="g2-kicker text-white/70">For owners &amp; advisors</p>
+          <h2 class="g2-display mx-auto mt-4 max-w-md text-white" style="font-size:clamp(1.6rem, 3vw, 2.6rem)">Own property? Let’s showcase its next chapter.</h2>
+          <p class="mx-auto mt-4 max-w-sm text-white/75">Partner with PropNest advisors for verified tours, architectural media staging, and buyer matching across prime neighborhoods.</p>
+          {% if user.is_authenticated and user.role == 'agent' or user.is_superuser or user.role == 'admin' %}
+            <a class="mt-8 inline-block rounded-full border border-white/70 px-8 py-4 text-sm font-medium text-white transition-colors hover:bg-white hover:text-[#0b2a47]" href="{% url 'add_property' %}">Publish a property</a>
+          {% else %}
+            <a class="mt-8 inline-block rounded-full border border-white/70 px-8 py-4 text-sm font-medium text-white transition-colors hover:bg-white hover:text-[#0b2a47]" href="{% url 'contact' %}">Start a conversation</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 {% endblock %}

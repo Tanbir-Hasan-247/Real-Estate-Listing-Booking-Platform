@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Our Architectural Studio — PropNest Real Estate{% endblock %}
+
+{% block content %}
+<div class="pn-page">
+  <div class="pn-container pn-stack-lg">
+    <section class="pn-stack-md" style="max-width:52rem;">
+      <p class="pn-kicker">Architectural Real Estate Platform</p>
+      <h1 class="pn-h1" style="margin:0;">Connecting timeless spatial design with confident property stewardship.</h1>
+      <p class="pn-lead">PropNest unifies architectural curation, verified property data, direct advisor access, and real-time tour scheduling into one cohesive luxury experience.</p>
+    </section>
+
+    <div class="pn-grid-3">
+      <div class="pn-kpi-card">
+        <span class="pn-kicker">Curated Holdings</span>
+        <span class="pn-kpi-val">{{ total_properties }}</span>
+        <span class="pn-muted">Residences vetted for structural craft, daylighting, and location longevity.</span>
+      </div>
+      <div class="pn-kpi-card">
+        <span class="pn-kicker">Advisory Specialists</span>
+        <span class="pn-kpi-val">{{ total_agents }}</span>
+        <span class="pn-muted">Licensed professionals handling private viewings and negotiation.</span>
+      </div>
+      <div class="pn-kpi-card">
+        <span class="pn-kicker">Active Metropolitan Hubs</span>
+        <span class="pn-kpi-val">{{ cities_count }}</span>
+        <span class="pn-muted">Prime neighborhoods mapped and verified across the portfolio.</span>
+      </div>
+    </div>
+
+    <section class="pn-card" style="padding:clamp(1.75rem, 4vw, 3rem);">
+      <div class="pn-grid-split" style="align-items:center;">
+        <div class="pn-stack-md">
+          <p class="pn-kicker">Three-Role Architecture</p>
+          <h2 class="pn-h2" style="margin:0;">Purpose-built tools for Buyers, Advisors &amp; Administrators.</h2>
+          <p class="pn-muted">Buyers save candidate homes, calculate realistic EMI repayments, and schedule private tours with live status notifications. Advisors orchestrate galleries and viewing approvals inside their Studio Dashboard, while Administrators oversee quality, roles, inquiries, and CSV reporting.</p>
+          <div class="pn-row">
+            <a href="{% url 'property_list' %}" class="pn-btn pn-btn-primary">Explore Residences →</a>
+            <a href="{% url 'contact' %}" class="pn-btn">Speak With Our Team</a>
+          </div>
+        </div>
+        <div class="overflow-hidden" style="aspect-ratio:4/3;border:1px solid var(--pn-border);border-radius:16px;">
+          <img src="{% static 'assets/menu-3.avif' %}" alt="PropNest Architectural Interior" class="w-full h-full object-cover">
+        </div>
+      </div>
+    </section>
+
+    {% if featured_agents %}
+      <section class="pn-stack-md">
+        <div class="pn-row-between">
+          <div>
+            <p class="pn-kicker">Leadership</p>
+            <h2 class="pn-h2" style="margin:0.35rem 0 0;">Featured Property Advisors</h2>
+          </div>
+          <a href="{% url 'agent_list' %}" class="pn-btn pn-btn-sm">Meet All Advisors →</a>
+        </div>
+
+        <div class="pn-grid-3">
+          {% for advisor in featured_agents %}
+            <article class="pn-card pn-card-hover" style="padding:1.5rem;">
+              <div class="pn-stack-md">
+                <div class="pn-row">
+                  {% if advisor.profile %}
+                    <img src="{{ advisor.profile.url }}" alt="{{ advisor.get_full_name|default:advisor.username }}" class="pn-avatar">
+                  {% else %}
+                    <span class="pn-avatar pn-avatar-initials">{{ advisor.username|slice:":2"|upper }}</span>
+                  {% endif %}
+                  <div>
+                    <h3 class="pn-h3" style="margin:0;">{{ advisor.get_full_name|default:advisor.username }}</h3>
+                    <p class="pn-kicker" style="font-size:0.62rem;">{{ advisor.listing_count }} Listed Residences</p>
+                  </div>
+                </div>
+                <p class="pn-muted" style="margin:0;">{{ advisor.bio|default:"Specializing in curated luxury residential properties and discreet private tours."|truncatewords:20 }}</p>
+                <a href="{% url 'properties_by_agent' advisor.id %}" class="pn-btn pn-btn-sm self-start">View Portfolio →</a>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

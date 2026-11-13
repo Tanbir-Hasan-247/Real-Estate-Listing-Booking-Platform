@@ -1,99 +1,138 @@
 {% extends "admin/admin_base.html" %}
 
-{% block title %}Manage Agents - Admin Panel{% endblock %}
+{% block title %}Licensed Advisors — Admin Console — PropNest{% endblock %}
 
 {% block admin_content %}
-    <div class="bg-indigo-900 text-white py-8 px-6 lg:px-10">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-                <h1 class="text-2xl md:text-3xl font-bold mb-2">Agent Management</h1>
-                <p class="text-indigo-200 mb-0">Monitor agent performance, listings, and contact info.</p>
-            </div>
-            <div class="flex-shrink-0">
-                <a href="#" class="bg-white text-indigo-900 font-bold py-2 px-6 rounded-md hover:bg-gray-100 transition shadow-md inline-flex items-center text-decoration-none">
-                    <i class="fa-solid fa-user-plus mr-2"></i> Register New Agent
-                </a>
-            </div>
-        </div>
-    </div>
+<div class="pn-row-between" style="align-items:flex-end;">
+  <div>
+    <p class="pn-kicker">Advisory Network</p>
+    <h1 class="pn-h1" style="margin:0.35rem 0 0;font-size:clamp(1.9rem, 3.4vw, 2.9rem);">Licensed Advisors</h1>
+  </div>
+  <button type="button" data-open-dialog="pn-create-agent-dialog" class="pn-btn pn-btn-primary pn-btn-sm">+ Register Advisor</button>
+</div>
 
-    <section class="p-6 lg:p-10">
-        
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-user-tie mr-2 text-indigo-600"></i> Registered Agents</h2>
+{% if create_form.errors %}
+  <div class="pn-alert pn-alert-error">
+    <strong>Advisor registration failed:</strong> {{ create_form.errors }}
+  </div>
+{% endif %}
+
+<search class="pn-card" style="padding:1.25rem 1.5rem;">
+  <form method="GET" action="{% url 'admin_agent_list' %}" class="pn-row" style="justify-content:space-between;">
+    <div class="pn-field" style="flex:1 1 280px;margin:0;">
+      <label for="adm-ag-q" class="visually-hidden">Search advisors</label>
+      <input id="adm-ag-q" type="search" name="search" value="{{ search_query }}" class="pn-input" placeholder="Search advisor by name, email, username...">
+    </div>
+    <div class="pn-row">
+      <button type="submit" class="pn-btn pn-btn-primary">Search</button>
+      {% if search_query %}<a href="{% url 'admin_agent_list' %}" class="pn-btn">Reset</a>{% endif %}
+    </div>
+  </form>
+</search>
+
+<div class="pn-table-wrap pn-native-cursor">
+  <table class="pn-table">
+    <thead>
+      <tr>
+        <th>Advisor</th>
+        <th>Contact</th>
+        <th>Holdings</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ag in agents %}
+        <tr>
+          <td data-label="Advisor">
+            <div class="pn-row" style="gap:0.75rem;flex-wrap:nowrap;">
+              {% if ag.profile %}
+                <img src="{{ ag.profile.url }}" alt="{{ ag.username }}" class="pn-avatar" style="width:42px;height:42px;">
+              {% else %}
+                <span class="pn-avatar pn-avatar-initials" style="width:42px;height:42px;font-size:0.78rem;">{{ ag.username|slice:":2"|upper }}</span>
+              {% endif %}
+              <div>
+                <a href="{% url 'properties_by_agent' ag.id %}" class="no-underline text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" style="font-weight:600;">
+                  {{ ag.get_full_name|default:ag.username }}
+                </a>
+                <div class="pn-muted" style="font-size:0.78rem;">@{{ ag.username }}</div>
+              </div>
             </div>
-            
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-white text-gray-500 text-sm border-b border-gray-200">
-                            <th class="px-6 py-4 font-medium uppercase tracking-wider">Agent Details</th>
-                            <th class="px-6 py-4 font-medium uppercase tracking-wider">Contact</th>
-                            <th class="px-6 py-4 font-medium uppercase tracking-wider">Listings</th>
-                            <th class="px-6 py-4 font-medium uppercase tracking-wider text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        
-                        {% for agent in agents %}
-                        <tr class="hover:bg-gray-50 transition">
-                            
-                            <td class="px-6 py-4 flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-full border-2 border-indigo-100 shadow-sm overflow-hidden flex-shrink-0 bg-indigo-50 flex items-center justify-center font-bold text-indigo-600 text-lg">
-                                    {% if agent.profile_picture %}
-                                        <img src="{{ agent.profile_picture.url }}" class="w-full h-full object-cover">
-                                    {% else %}
-                                        {{ agent.username|first|upper }}
-                                    {% endif %}
-                                </div>
-                                <div>
-                                    <p class="text-sm font-bold text-gray-800 mb-0 flex items-center gap-2">
-                                        {{ agent.first_name|default:agent.username }} {{ agent.last_name }}
-                                        {% if agent.is_active %}
-                                            <i class="fa-solid fa-circle-check text-green-500 text-xs" title="Active"></i>
-                                        {% else %}
-                                            <i class="fa-solid fa-circle-xmark text-red-500 text-xs" title="Suspended"></i>
-                                        {% endif %}
-                                    </p>
-                                    <p class="text-xs text-gray-500 mb-0">Joined: {{ agent.date_joined|date:"M Y" }}</p>
-                                </div>
-                            </td>
-                            
-                            <td class="px-6 py-4">
-                                <p class="text-sm text-gray-800 mb-1"><i class="fa-regular fa-envelope text-gray-400 w-4 text-center mr-1"></i> {{ agent.email }}</p>
-                                {% if agent.phone_number %}
-                                <p class="text-sm text-gray-800 mb-0"><i class="fa-solid fa-phone text-gray-400 w-4 text-center mr-1"></i> {{ agent.phone_number }}</p>
-                                {% else %}
-                                <p class="text-xs text-gray-400 italic mb-0">No phone number</p>
-                                {% endif %}
-                            </td>
-                            
-                            <td class="px-6 py-4">
-                                <span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-md font-bold text-sm border border-indigo-100">
-                                    <i class="fa-solid fa-building mr-1"></i> {{ agent.property_set.count|default:"0" }} Properties
-                                </span>
-                            </td>
-                            
-                            <td class="px-6 py-4 text-right space-x-2">
-                                <a href="{% url 'properties_by_agent' agent.id %}" class="text-gray-400 hover:text-indigo-600 transition" title="View Public Profile"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-                                <a href="#" class="text-gray-400 hover:text-green-600 transition" title="Edit Agent"><i class="fa-solid fa-pen-to-square"></i></a>
-                                <a href="#" class="text-gray-400 hover:text-red-600 transition" title="Delete Agent"><i class="fa-solid fa-trash-can"></i></a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-gray-500">
-                                <i class="fa-solid fa-user-tie text-3xl mb-3 text-gray-300 block"></i>
-                                No agents are currently registered on the platform.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        
-                    </tbody>
-                </table>
+          </td>
+          <td data-label="Contact">
+            <div style="font-size:0.86rem;">{{ ag.email }}</div>
+            {% if ag.phone %}<div class="pn-muted" style="font-size:0.78rem;">{{ ag.phone }}</div>{% endif %}
+          </td>
+          <td data-label="Holdings">
+            <span class="pn-badge pn-badge-available">{{ ag.active_listing_count }} Active</span>
+            <span class="pn-badge">{{ ag.listing_count }} Total</span>
+          </td>
+          <td data-label="Status">
+            {% if ag.is_active %}
+              <span class="pn-badge pn-badge-available">Active</span>
+            {% else %}
+              <span class="pn-badge pn-badge-cancelled">Suspended</span>
+            {% endif %}
+          </td>
+          <td data-label="Actions">
+            <div class="pn-row" style="gap:0.4rem;">
+              <a href="{% url 'properties_by_agent' ag.id %}" class="pn-btn pn-btn-sm">Portfolio</a>
+              <button type="button"
+                      class="pn-btn pn-btn-sm"
+                      data-confirm-action="{% url 'admin_toggle_user_active' ag.id %}"
+                      data-confirm-title="{% if ag.is_active %}Suspend Advisor{% else %}Activate Advisor{% endif %}"
+                      data-confirm-body="{% if ag.is_active %}Suspend advisor '@{{ ag.username }}'?{% else %}Activate advisor '@{{ ag.username }}'?{% endif %}"
+                      data-confirm-label="{% if ag.is_active %}Suspend{% else %}Activate{% endif %}"
+                      data-confirm-variant="primary">
+                {% if ag.is_active %}Suspend{% else %}Activate{% endif %}
+              </button>
+              <button type="button"
+                      class="pn-btn pn-btn-danger pn-btn-sm"
+                      data-confirm-action="{% url 'admin_delete_user' ag.id %}"
+                      data-confirm-title="Delete Advisor"
+                      data-confirm-body="Remove advisor '@{{ ag.username }}' and all listings they own?"
+                      data-confirm-label="Delete">
+                Delete
+              </button>
             </div>
-        </div>
-        
-    </section>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="pn-muted">No advisors registered.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block extra_modals %}
+<dialog id="pn-create-agent-dialog" class="pn-dialog pn-dialog-wide" closedby="any" aria-labelledby="ca-title">
+  <div class="pn-stack-md">
+    <div class="pn-row-between">
+      <p class="pn-kicker" style="margin:0;">Onboarding</p>
+      <button type="button" data-close-dialog aria-label="Close modal" style="background:transparent;border:0;color:var(--g2-sand-dim);font-size:1.35rem;">×</button>
+    </div>
+    <h2 id="ca-title" class="pn-h3" style="margin:0;">Register Partner Advisor</h2>
+    <form method="POST" action="{% url 'admin_agent_list' %}" class="pn-validated-form">
+      {% csrf_token %}
+      <div class="pn-grid-2">
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.username.id_for_label }}">Username *</label>{{ create_form.username }}</div>
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.email.id_for_label }}">Email *</label>{{ create_form.email }}</div>
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.first_name.id_for_label }}">First Name</label>{{ create_form.first_name }}</div>
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.last_name.id_for_label }}">Last Name</label>{{ create_form.last_name }}</div>
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.phone.id_for_label }}">Phone</label>{{ create_form.phone }}</div>
+        <div class="pn-field"><label class="pn-label" for="{{ create_form.password.id_for_label }}">Initial Password *</label>{{ create_form.password }}</div>
+      </div>
+      <div class="pn-field"><label class="pn-label" for="{{ create_form.bio.id_for_label }}">Advisor Bio &amp; Districts</label>{{ create_form.bio }}</div>
+      <label class="pn-row" style="margin-bottom:1.25rem;gap:0.65rem;">
+        {{ create_form.is_active }}
+        <span class="pn-label" style="margin:0;">Active Upon Creation</span>
+      </label>
+      <div class="pn-row" style="justify-content:flex-end;">
+        <button type="button" data-close-dialog class="pn-btn pn-btn-sm">Cancel</button>
+        <button type="submit" class="pn-btn pn-btn-primary">Register Advisor →</button>
+      </div>
+    </form>
+  </div>
+</dialog>
 {% endblock %}

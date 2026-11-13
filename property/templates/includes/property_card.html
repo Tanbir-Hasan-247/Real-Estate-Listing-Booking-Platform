@@ -1,0 +1,95 @@
+{% load static %}
+<article class="pn-card pn-card-hover pn-prop-card">
+  <div class="pn-prop-img-wrap">
+    <a href="{% url 'property_detail' prop.id %}" style="display:block;width:100%;height:100%;">
+      {% if prop.display_img_url %}
+        <img src="{{ prop.display_img_url }}" alt="{{ prop.title }}" loading="lazy">
+      {% elif prop.first_image %}
+        <img src="{{ prop.first_image.safe_url }}" alt="{{ prop.title }}" loading="lazy">
+      {% else %}
+        <img src="{{ prop.primary_image_url }}" alt="{{ prop.title }}" loading="lazy">
+      {% endif %}
+    </a>
+
+    <!-- Top Badges -->
+    <div style="position:absolute;top:0.85rem;left:0.85rem;right:0.85rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;pointer-events:none;">
+      <div class="pn-row" style="gap:0.4rem;">
+        <span class="pn-badge pn-badge-ember" style="backdrop-filter:blur(8px);background:rgba(13,58,94,0.82);color:#f4ece1;">
+          {{ prop.get_listing_type_display }}
+        </span>
+        <span class="pn-badge {% if prop.status == 'available' %}pn-badge-available{% elif prop.status == 'sold' %}pn-badge-sold{% else %}pn-badge-rented{% endif %}" style="backdrop-filter:blur(8px);">
+          {{ prop.get_status_display }}
+        </span>
+      </div>
+
+      {% if prop.is_featured %}
+        <span class="pn-badge" style="backdrop-filter:blur(8px);background:var(--g2-ember);border-color:var(--g2-ember);color:#ffffff;">Featured</span>
+      {% endif %}
+    </div>
+
+    <!-- Floating Quick Save Wishlist Toggle -->
+    {% if user.is_authenticated %}
+      <form method="POST" action="{% url 'save_property' prop.id %}" data-ajax-save style="position:absolute;bottom:0.85rem;right:0.85rem;">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        {% if saved_ids and prop.id in saved_ids %}
+          <button type="submit" aria-pressed="true" aria-label="Remove {{ prop.title }} from saved" class="pn-btn pn-btn-sm pn-btn-primary" style="backdrop-filter:blur(8px);padding:0.4rem 0.75rem;">
+            <span data-save-icon>♥</span>
+          </button>
+        {% else %}
+          <button type="submit" aria-pressed="false" aria-label="Save {{ prop.title }}" class="pn-btn pn-btn-sm" style="backdrop-filter:blur(8px);background:rgba(13,58,94,0.78);color:#f4ece1;padding:0.4rem 0.75rem;">
+            <span data-save-icon>♡</span>
+          </button>
+        {% endif %}
+      </form>
+    {% endif %}
+  </div>
+
+  <div class="pn-prop-card-body">
+    <div class="pn-row-between" style="align-items:baseline;">
+      <span class="pn-kicker">{{ prop.property_type.name }}</span>
+      <span class="g2-display" style="font-size:1.35rem;font-weight:400;color:var(--g2-gold);font-variant-numeric:tabular-nums;">
+        ${{ prop.price|floatformat:0 }}{% if prop.listing_type == 'rent' %}<span style="font-size:0.75rem;color:var(--g2-sand-dim);">/mo</span>{% endif %}
+      </span>
+    </div>
+
+    <div>
+      <h3 class="pn-h3" style="margin:0;">
+        <a href="{% url 'property_detail' prop.id %}" class="no-underline text-[var(--g2-sand)] hover:text-[var(--g2-gold)] transition-colors">
+          {{ prop.title }}
+        </a>
+      </h3>
+      <p class="pn-muted" style="margin:0.25rem 0 0;font-size:0.84rem;">{{ prop.location }}, {{ prop.city }}</p>
+    </div>
+
+    <div class="pn-prop-specs">
+      <div>
+        <span>Beds</span>
+        <strong>{{ prop.bedrooms|default:"Studio" }}</strong>
+      </div>
+      <div>
+        <span>Baths</span>
+        <strong>{{ prop.bathrooms|default:"—" }}</strong>
+      </div>
+      <div>
+        <span>Area</span>
+        <strong>{{ prop.area_sqft }} sqft</strong>
+      </div>
+    </div>
+
+    <div class="pn-row-between" style="margin-top:auto;">
+      <a href="{% url 'properties_by_agent' prop.agent.id %}" class="pn-row no-underline text-[var(--g2-sand-dim)] hover:text-[var(--g2-gold)]" style="gap:0.55rem;">
+        {% if prop.agent.profile %}
+          <img src="{{ prop.agent.profile.url }}" alt="{{ prop.agent.get_full_name|default:prop.agent.username }}" class="pn-avatar" style="width:32px;height:32px;border-width:1px;">
+        {% else %}
+          <span class="pn-avatar pn-avatar-initials" style="width:32px;height:32px;border-width:1px;font-size:0.72rem;">{{ prop.agent.username|slice:":2"|upper }}</span>
+        {% endif %}
+        <span style="font-size:0.8rem;">{{ prop.agent.get_full_name|default:prop.agent.username }}</span>
+      </a>
+
+      <a href="{% url 'property_detail' prop.id %}" class="pn-btn pn-btn-sm">
+        Inspect →
+      </a>
+    </div>
+  </div>
+</article>
