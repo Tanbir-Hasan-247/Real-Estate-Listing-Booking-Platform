@@ -18,8 +18,8 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Django](https://img.shields.io/badge/Django-6.0.3-092E20?style=for-the-badge&logo=django&logoColor=white)](https://djangoproject.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.x-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![Bootstrap](https://img.shields.io/badge/Bootstrap-5-7952B3?style=for-the-badge&logo=bootstrap&logoColor=white)](https://getbootstrap.com)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Three.js](https://img.shields.io/badge/Three.js-WebGL_3D-000000?style=for-the-badge&logo=threedotjs&logoColor=white)](https://threejs.org)
 
 <br/>
 
@@ -30,7 +30,7 @@
 
 <br/>
 
-[**Live Demo**](https://github.com/Tanbir-Hasan-247) · [**Report a Bug**](https://github.com/Tanbir-Hasan-247/Real-Estate-Listing-Booking-Platform/issues) · [**Request a Feature**](https://github.com/Tanbir-Hasan-247/Real-Estate-Listing-Booking-Platform/issues)
+[**Live Demo**](https://propnest-omega.vercel.app/) · [**Report a Bug**](https://github.com/Tanbir-Hasan-247/Real-Estate-Listing-Booking-Platform/issues) · [**Request a Feature**](https://github.com/Tanbir-Hasan-247/Real-Estate-Listing-Booking-Platform/issues)
 
 <br/>
 
@@ -72,11 +72,15 @@ Whether you're looking for your dream home, listing a property for rent, or mana
 
 <div align="center">
 
-| 🏠 Home Page | 🔍 Property Details |
+| 🏠 Editorial Hero Showcase | 🏙️ Interactive 3D Architectural Tower |
 |:---:|:---:|
-| ![Home Page](media/screenshots/home_page.png) | ![Property Details](media/screenshots/property_details.png) |
+| ![Home Page](media/screenshots/home_page.png) | ![3D Architectural Tower](media/screenshots/tower_3d.png) |
 
-| 🧑‍💼 Agent Dashboard | 🛡️ Admin Overview |
+| 🔍 Residence Details & Concierge | 🔐 1-Click Demo Tour Sign In |
+|:---:|:---:|
+| ![Property Details](media/screenshots/property_details.png) | ![Demo Login](media/screenshots/demo_login.png) |
+
+| 🧑‍💼 Advisor Studio Dashboard | 🛡️ Admin Executive Console |
 |:---:|:---:|
 | ![Agent Dashboard](media/screenshots/agent_dashboard.png) | ![Admin Dashboard](media/screenshots/admin_dashboard.png) |
 
@@ -160,8 +164,8 @@ Powered by **Django Signals**, buyers automatically receive email alerts when:
 | **Language** | Python 3.11+ |
 | **Framework** | Django 6.0.3 |
 | **Database** | PostgreSQL 16+ |
-| **Frontend** | Tailwind CSS, Bootstrap 5, HTML5 |
-| **Icons** | Font Awesome 6 |
+| **Frontend** | Tailwind CSS, Three.js (WebGL 3D), HTML5 |
+| **Media & Static** | Cloudinary, WhiteNoise |
 | **Notifications** | Django Signals |
 | **Auth Tokens** | `default_token_generator` (Email Verification) |
 | **Dev Tools** | python-dotenv, Faker (for DB seeding) |
@@ -253,12 +257,13 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-**Step 6 — (Optional) Populate with fake data**
+**Step 6 — (Optional) Populate sample listings & 1-click demo accounts**
 
-Seed the database with realistic fake properties, agents, and categories for testing:
+Seed the database with realistic properties, agents, and demo tour accounts for testing:
 
 ```bash
 python populateDB.py
+python manage.py seed_demo_accounts
 ```
 
 **Step 7 — Create a superuser (Admin account)**
@@ -307,13 +312,13 @@ EMAIL_HOST_PASSWORD=your_gmail_app_password
 
 ## 🧭 Usage
 
-Once the server is running, you can explore the platform with three different roles:
+Once the server is running (or on the [Live Demo](https://propnest-omega.vercel.app/login/)), use the **1-Click Demo Tour** on `/login/` or register directly to explore all three roles:
 
-| Role | Access URL | What You Can Do |
-|---|---|---|
-| **Buyer** | `/register/` → Register as Buyer | Browse listings, save to wishlist, book tours |
-| **Agent** | `/register/` → Register as Agent | Create & manage listings, respond to tour requests |
-| **Admin** | `/admin/` or Admin Dashboard | Full platform control, user management |
+| Role | Demo Credentials (`/login/`) | Register URL | What You Can Do |
+|---|---|---|---|
+| **Client / Buyer** | `demo_client` / `Client@2026` | `/register/` → Buyer | Browse listings, save to wishlist, book private tours |
+| **Advisor / Agent** | `demo_agent` / `Agent@2026` | `/register/` → Agent | Create & manage listings, respond to tour requests |
+| **Platform Admin** | `demo_admin` / `Admin@2026` | `/admin-dashboard/` | Full platform control, CSV inventory export, user directory |
 
 ---
 
