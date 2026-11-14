@@ -100,9 +100,27 @@
   .g2-clients-track,
   .g-ring-spin,
   .g2-dwell {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+    animation: none !important;
   }
+  .pn-card-hover:hover {
+    transform: none !important;
+  }
+}
+
+/* Defer off-screen layout/paint for non-sticky bottom sections and listing grids */
+[data-g2-section="cta"] {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 440px;
+}
+
+[data-g2-section="footer"] {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 580px;
+}
+
+.pn-prop-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
 }
 
 /* Focus indicators for accessibility */
