@@ -2,11 +2,19 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 
 from Real_Estate import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path(
+        "favicon.ico",
+        RedirectView.as_view(url=f"{settings.STATIC_URL}assets/favicon.svg", permanent=True),
+        name="favicon",
+    ),
+    path("robots.txt", views.RobotsTxtView.as_view(), name="robots_txt"),
+    path("sitemap.xml", views.SitemapXmlView.as_view(), name="sitemap_xml"),
     path("", views.HomeView.as_view(), name="home"),
     path("properties/", views.PropertyListView.as_view(), name="property_list"),
     path("agents/", views.AgentListView.as_view(), name="agent_list"),

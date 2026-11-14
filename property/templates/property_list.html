@@ -9,12 +9,18 @@
     <!-- Directory Header -->
     <div class="pn-row-between" style="align-items:flex-end;">
       <div>
-        <p class="pn-kicker"> Curated Holdings • {{ page_obj.paginator.count }} Available</p>
+        <p class="pn-kicker">Curated Holdings • {{ page_obj.paginator.count }} Available</p>
         <h1 class="pn-h1" style="margin:0.45rem 0 0;">Residences Portfolio</h1>
       </div>
-      {% if selected_filters.search or selected_filters.listing_type or selected_filters.property_type or selected_filters.city or selected_filters.bedrooms or selected_filters.min_price or selected_filters.max_price %}
-        <a href="{% url 'property_list' %}" class="pn-btn pn-btn-sm">Reset Filters</a>
-      {% endif %}
+      <div class="pn-row" style="gap:0.75rem;align-items:center;flex-wrap:wrap;">
+        <div role="tablist" aria-label="Portfolio view mode" class="pn-tablist">
+          <button type="button" role="tab" id="tab-grid-view" aria-selected="true" aria-controls="panel-grid-view" tabindex="0">Grid View</button>
+          <button type="button" role="tab" id="tab-map-view" aria-selected="false" aria-controls="panel-map-view" tabindex="-1" data-map-tab="true">Map View</button>
+        </div>
+        {% if selected_filters.search or selected_filters.listing_type or selected_filters.property_type or selected_filters.city or selected_filters.bedrooms or selected_filters.min_price or selected_filters.max_price or selected_amenities %}
+          <a href="{% url 'property_list' %}" class="pn-btn pn-btn-sm">Reset Filters</a>
+        {% endif %}
+      </div>
     </div>
 
     <!-- Filter & Sort Bar -->
@@ -83,8 +89,21 @@
             <option value="price_asc" {% if selected_filters.sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
             <option value="price_desc" {% if selected_filters.sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
             <option value="area_desc" {% if selected_filters.sort == 'area_desc' %}selected{% endif %}>Largest Floorplate</option>
+            <option value="rating_desc" {% if selected_filters.sort == 'rating_desc' %}selected{% endif %}>Highest Rated</option>
           </select>
         </div>
+
+        <fieldset style="grid-column:1 / -1;border:1px solid var(--pn-border);border-radius:14px;padding:0.85rem 1rem;margin:0.25rem 0 0;">
+          <legend class="pn-label" style="padding:0 0.45rem;margin-bottom:0;">Architectural Amenities</legend>
+          <div class="pn-amenity-pill-row" style="margin-top:0.35rem;">
+            {% for code, label in amenity_choices %}
+              <label class="pn-amenity-chip {% if code in selected_amenities %}is-checked{% endif %}" style="padding:0.4rem 0.72rem;font-size:0.76rem;">
+                <input type="checkbox" name="amenity" value="{{ code }}" {% if code in selected_amenities %}checked{% endif %} style="accent-color:var(--g2-ember);">
+                <span>{{ label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </fieldset>
 
         <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; gap:0.75rem; flex-wrap:wrap;">
           <a href="{% url 'property_list' %}" class="pn-btn">Clear</a>
@@ -93,15 +112,35 @@
       </form>
     </search>
 
-    <!-- Residence Cards Grid -->
+    <!-- Residence Cards Panel & Interactive Map Panel -->
     {% if properties %}
-      <div class="pn-grid-3">
-        {% for prop in properties %}
-          {% include "includes/property_card.html" with prop=prop %}
-        {% endfor %}
+      <div id="panel-grid-view" role="tabpanel" aria-labelledby="tab-grid-view">
+        <div class="pn-grid-3">
+          {% for prop in properties %}
+            {% include "includes/property_card.html" with prop=prop %}
+          {% endfor %}
+        </div>
+        {% include "includes/pagination.html" with page_obj=page_obj querystring=querystring %}
       </div>
 
-      {% include "includes/pagination.html" with page_obj=page_obj querystring=querystring %}
+      <div id="panel-map-view" role="tabpanel" aria-labelledby="tab-map-view" hidden>
+        <div class="pn-map-shell">
+          <div id="pn-list-map-canvas" class="pn-map-canvas" aria-label="Interactive residence portfolio map"></div>
+          <div class="pn-card pn-stack-sm" style="padding:1.25rem;max-height:520px;overflow-y:auto;">
+            <p class="pn-kicker" style="margin:0;">Pin Explorer ({{ map_properties|length }} Mapped)</p>
+            {% for mp in map_properties|slice:":12" %}
+              <a href="{{ mp.url }}" class="pn-card-subtle" style="padding:0.75rem 0.9rem;text-decoration:none;display:block;color:var(--g2-sand);">
+                <div class="pn-row-between" style="gap:0.4rem;">
+                  <strong style="font-size:0.86rem;">{{ mp.title }}</strong>
+                  <span style="color:var(--g2-gold);font-size:0.82rem;font-weight:600;">{{ mp.price }}</span>
+                </div>
+                <span class="pn-muted" style="font-size:0.75rem;">{{ mp.location }}, {{ mp.city }}</span>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+        {{ map_properties|json_script:"pn-map-properties-data" }}
+      </div>
     {% else %}
       <div class="pn-empty-state pn-stack-md" style="align-items:center;">
         <p class="pn-kicker">No Matches</p>

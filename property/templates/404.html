@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}404 — Residence Not Found | PropNest Real Estate{% endblock %}
+
+{% block content %}
+<div class="pn-page">
+  <div class="pn-container" style="max-width:720px;">
+    <section class="pn-card pn-stack-md" style="padding:clamp(2rem, 5vw, 3.5rem);text-align:center;">
+      <p class="pn-kicker" style="color:var(--g2-ember);margin:0;">Error 404 · Coordinates Missing</p>
+      <h1 class="pn-h1" style="margin:0.4rem 0 0;">This architectural record could not be located.</h1>
+      <p class="pn-muted" style="margin:0 auto;max-width:50ch;">
+        The residence listing may have been off-marketed, moved, or requested with an outdated URL. Explore active curated holdings below.
+      </p>
+      <div class="pn-row" style="justify-content:center;gap:0.75rem;margin-top:0.5rem;">
+        <a href="{% url 'property_list' %}" class="pn-btn pn-btn-primary">Browse All Residences →</a>
+        <a href="{% url 'home' %}" class="pn-btn">Return Home</a>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

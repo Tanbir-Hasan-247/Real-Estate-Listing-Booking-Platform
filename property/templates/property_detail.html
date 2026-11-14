@@ -2,6 +2,17 @@
 {% load static %}
 
 {% block title %}{{ property.title }} — PropNest Real Estate{% endblock %}
+{% block meta_description %}{{ property.title }} in {{ property.location }}, {{ property.city }} — {{ property.area_sqft }} sqft architectural {{ property.property_type.name|lower }} listed for ${{ property.price|floatformat:0 }}.{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ property.title }} — ${{ property.price|floatformat:0 }} | PropNest{% endblock %}
+{% block og_description %}{{ property.description|truncatewords:28 }}{% endblock %}
+{% block og_image_meta %}
+  {% if images_list %}
+    <meta property="og:image" content="{% if images_list.0.safe_url|slice:':4' == 'http' %}{{ images_list.0.safe_url }}{% else %}{{ request.scheme }}://{{ request.get_host }}{{ images_list.0.safe_url }}{% endif %}">
+  {% else %}
+    <meta property="og:image" content="{% if property.primary_image_url|slice:':4' == 'http' %}{{ property.primary_image_url }}{% else %}{{ request.scheme }}://{{ request.get_host }}{{ property.primary_image_url }}{% endif %}">
+  {% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="pn-page">
@@ -48,6 +59,14 @@
             <a href="{% url 'login' %}?next={{ request.path }}" class="pn-btn pn-btn-sm">♡ Sign In to Save</a>
           {% endif %}
 
+          <button type="button"
+                  data-compare-toggle
+                  data-prop-id="{{ property.id }}"
+                  data-prop-title="{{ property.title }}"
+                  aria-pressed="false"
+                  class="pn-btn pn-btn-sm pn-compare-btn">
+            <span data-compare-label>+ Compare</span>
+          </button>
           <button type="button" id="pn-copy-share-btn" class="pn-btn pn-btn-sm">Share Link</button>
         </div>
       </div>
@@ -102,13 +121,24 @@
           </div>
         </div>
 
-        <!-- Editorial Narrative -->
+        <!-- Editorial Narrative & Architectural Amenities -->
         <section class="pn-card pn-stack-md" style="padding:clamp(1.5rem, 3vw, 2.25rem);">
           <div>
             <p class="pn-kicker">Architectural Overview</p>
             <h2 class="pn-h2" style="margin:0.35rem 0 0;">Residence Specifications &amp; Narrative</h2>
           </div>
           <div style="font-size:1rem;line-height:1.75;color:var(--g2-sand);white-space:pre-line;">{{ property.description }}</div>
+
+          {% if property.amenity_labels %}
+            <div style="border-top:1px solid var(--pn-border);padding-top:1.1rem;">
+              <p class="pn-kicker" style="margin:0 0 0.65rem;">Included Amenities &amp; Infrastructure</p>
+              <div class="pn-amenity-pill-row">
+                {% for label in property.amenity_labels %}
+                  <span class="pn-amenity-pill">✓ {{ label }}</span>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
         </section>
 
         <!-- Interactive Mortgage / EMI Calculator -->
@@ -157,6 +187,72 @@
             <span class="pn-badge">{{ map_lat|floatformat:4 }}, {{ map_lng|floatformat:4 }}</span>
           </div>
           <iframe class="pn-map-embed" loading="lazy" title="Map of {{ property.title }}" src="https://maps.google.com/maps?q={{ map_lat }},{{ map_lng }}&amp;z=15&amp;output=embed"></iframe>
+        </section>
+
+        <!-- Verified Walkthrough Reviews -->
+        <section id="reviews" class="pn-card pn-stack-md" style="padding:clamp(1.5rem, 3vw, 2.25rem);">
+          <div class="pn-row-between" style="align-items:flex-end;">
+            <div>
+              <p class="pn-kicker">Verified Buyer Impressions</p>
+              <h2 class="pn-h2" style="margin:0.35rem 0 0;">Walkthrough Reviews ({{ review_count }})</h2>
+            </div>
+            {% if review_avg %}
+              <span class="pn-badge" style="border-color:var(--g2-gold);color:var(--g2-gold);font-size:0.86rem;">
+                ★ {{ review_avg }} / 5.0 Average
+              </span>
+            {% endif %}
+          </div>
+
+          {% if can_review %}
+            <form method="POST" action="{% url 'submit_property_review' property.id %}" class="pn-card-subtle pn-stack-md" style="padding:1.25rem;">
+              {% csrf_token %}
+              <fieldset style="border:0;padding:0;margin:0;">
+                <legend class="pn-label" style="margin-bottom:0.55rem;">
+                  {% if user_review %}Update Your Verified Rating{% else %}Rate Your Completed Walkthrough{% endif %}
+                </legend>
+                <div class="pn-rating-radios">
+                  {% for choice in review_form.rating %}
+                    <label for="{{ choice.id_for_label }}">{{ choice.tag }}<span>{{ choice.choice_label }}</span></label>
+                  {% endfor %}
+                </div>
+              </fieldset>
+
+              <div class="pn-field" style="margin:0;">
+                <label for="{{ review_form.comment.id_for_label }}" class="pn-label">Your Review Notes</label>
+                {{ review_form.comment }}
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;">
+                <button type="submit" class="pn-btn pn-btn-primary pn-btn-sm">
+                  {% if user_review %}Update Review →{% else %}Publish Verified Review →{% endif %}
+                </button>
+              </div>
+            </form>
+          {% elif user.is_authenticated and user != property.agent %}
+            <p class="pn-muted" style="margin:0;font-size:0.86rem;">
+              Verified reviews open automatically once an advisor marks your scheduled walkthrough as <strong>Completed</strong>.
+            </p>
+          {% endif %}
+
+          {% if reviews %}
+            <div class="pn-stack-sm">
+              {% for rev in reviews %}
+                <article class="pn-card-subtle pn-stack-xs" style="padding:1.1rem 1.25rem;">
+                  <div class="pn-row-between" style="gap:0.75rem;">
+                    <div class="pn-row" style="gap:0.65rem;">
+                      <strong style="font-size:0.94rem;color:var(--g2-sand);">{{ rev.reviewer.get_full_name|default:rev.reviewer.username }}</strong>
+                      <span class="pn-badge pn-badge-confirmed" style="font-size:0.62rem;">Verified Tour Buyer</span>
+                    </div>
+                    <span style="color:var(--g2-gold);font-weight:700;font-size:0.88rem;">★ {{ rev.rating }} / 5</span>
+                  </div>
+                  <p style="margin:0.3rem 0 0;line-height:1.65;color:var(--g2-sand);font-size:0.92rem;">{{ rev.comment }}</p>
+                  <span class="pn-muted" style="font-size:0.72rem;">Posted {{ rev.created_at|date:"M d, Y" }}</span>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="pn-muted" style="margin:0;">No buyer walkthrough reviews recorded for this residence yet.</p>
+          {% endif %}
         </section>
       </div>
 

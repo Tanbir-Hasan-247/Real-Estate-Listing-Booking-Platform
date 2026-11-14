@@ -1020,7 +1020,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     const baseDpr = Math.min(window.devicePixelRatio || 1, 1.5);
     let renderScale = 1.0;
     let useComposer = !prefersReducedMotion;
-    renderer.setPixelRatio(Math.min(baseDpr, 1.25));
+    renderer.setPixelRatio(baseDpr);
     renderer.toneMapping = THREE.NeutralToneMapping;
     renderer.toneMappingExposure = 1;
 
@@ -1454,7 +1454,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
       const w = cachedCanvasW || canvas.clientWidth;
       const h = cachedCanvasH || canvas.clientHeight;
       if (!w || !h) return;
-      const effectiveDpr = Math.max(0.65, Math.min(baseDpr, 1.25) * renderScale);
+      const effectiveDpr = Math.max(0.75, baseDpr * renderScale);
       renderer.setPixelRatio(effectiveDpr);
       renderer.setSize(w, h, false);
       if (useComposer) {
@@ -2563,6 +2563,279 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
       if (badge && typeof data.saved_count === 'number') {
         badge.textContent = String(data.saved_count);
       }
+      const liveAnnouncer = document.getElementById('pn-live-status');
+      if (liveAnnouncer && data.message) liveAnnouncer.textContent = data.message;
+    } catch (_) {
+      form.submit();
+    }
+  });
+
+  // I. Residence Side-by-Side Comparison Tray (localStorage-backed, max 4 listings)
+  const COMPARE_KEY = 'pnCompareIds';
+  const compareBar = document.getElementById('pn-compare-bar');
+  const compareCountEl = document.querySelector('[data-compare-count]');
+  const compareLinkEl = document.querySelector('[data-compare-link]');
+  const compareClearBtn = document.querySelector('[data-compare-clear]');
+
+  const getCompareItems = () => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(COMPARE_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed.slice(0, 4) : [];
+    } catch (_) {
+      return [];
+    }
+  };
+
+  const syncCompareUI = () => {
+    const items = getCompareItems();
+    const idSet = new Set(items.map(i => String(i.id)));
+
+    document.querySelectorAll('[data-compare-toggle]').forEach(btn => {
+      const pid = String(btn.dataset.propId || '');
+      const selected = idSet.has(pid);
+      btn.classList.toggle('is-selected', selected);
+      btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      const label = btn.querySelector('[data-compare-label]');
+      if (label) label.textContent = selected ? '✓ Compare' : '+ Compare';
+    });
+
+    if (compareBar) {
+      const onComparePage = window.location.pathname.includes('/compare');
+      compareBar.hidden = items.length === 0 || onComparePage;
+      if (compareCountEl) compareCountEl.textContent = `${items.length}/4 Selected`;
+      if (compareLinkEl) {
+        const baseHref = compareLinkEl.dataset.baseHref || '/properties/compare/';
+        compareLinkEl.href = items.length ? `${baseHref}?ids=${items.map(i => i.id).join(',')}` : baseHref;
+      }
+    }
+  };
+
+  document.addEventListener('click', e => {
+    const toggle = e.target.closest?.('[data-compare-toggle]');
+    if (!toggle) return;
+    const pid = String(toggle.dataset.propId || '');
+    if (!pid) return;
+
+    let items = getCompareItems();
+    const existingIdx = items.findIndex(i => String(i.id) === pid);
+    const live = document.getElementById('pn-live-status');
+    if (existingIdx >= 0) {
+      items.splice(existingIdx, 1);
+      if (live) live.textContent = 'Removed residence from comparison tray.';
+    } else {
+      if (items.length >= 4) {
+        items.shift();
+      }
+      items.push({ id: pid, title: toggle.dataset.propTitle || `Residence #${pid}` });
+      if (live) live.textContent = `Added ${toggle.dataset.propTitle || 'residence'} to comparison (${items.length}/4).`;
+    }
+    try {
+      localStorage.setItem(COMPARE_KEY, JSON.stringify(items));
+    } catch (_) {}
+    syncCompareUI();
+  });
+
+  compareClearBtn?.addEventListener('click', () => {
+    try {
+      localStorage.removeItem(COMPARE_KEY);
+    } catch (_) {}
+    syncCompareUI();
+  });
+
+  syncCompareUI();
+
+  // J. Accessible Tabs (List View / Map View & modular panels)
+  const ensureLeaflet = () => {
+    if (window.L) return Promise.resolve(window.L);
+    if (window.__pnLeafletPromise) return window.__pnLeafletPromise;
+    window.__pnLeafletPromise = new Promise(resolve => {
+      if (!document.getElementById('pn-leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'pn-leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.async = true;
+      script.onload = () => resolve(window.L || null);
+      script.onerror = () => resolve(null);
+      document.head.appendChild(script);
+    });
+    return window.__pnLeafletPromise;
+  };
+
+  let listMapInstance = null;
+  const initListMap = async () => {
+    const mapBox = document.getElementById('pn-list-map-canvas');
+    const dataEl = document.getElementById('pn-map-properties-data');
+    if (!mapBox || !dataEl || mapBox.dataset.mounted === '1') {
+      listMapInstance?.invalidateSize?.();
+      return;
+    }
+    let items = [];
+    try {
+      items = JSON.parse(dataEl.textContent || '[]');
+    } catch (_) {
+      items = [];
+    }
+    if (!items.length) return;
+    mapBox.dataset.mounted = '1';
+
+    const L = await ensureLeaflet();
+    if (!L) {
+      // Offline / sandbox resilient fallback schematic
+      mapBox.innerHTML = `<div style="padding:1.5rem;display:grid;gap:0.75rem;">
+        <p class="pn-kicker" style="margin:0;">District Coordinate Plot (${items.length} Listings)</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:0.65rem;">
+          ${items.slice(0, 9).map(p => `<a href="${p.url}" class="pn-card-subtle" style="padding:0.75rem;text-decoration:none;color:var(--g2-sand);">
+            <strong style="display:block;font-size:0.86rem;">${p.title}</strong>
+            <span class="pn-muted" style="font-size:0.74rem;">${p.city} · ${Number(p.lat).toFixed(4)}, ${Number(p.lng).toFixed(4)}</span>
+          </a>`).join('')}
+        </div>
+      </div>`;
+      return;
+    }
+
+    const first = items[0];
+    const map = L.map(mapBox, { scrollWheelZoom: false }).setView([first.lat, first.lng], 12);
+    listMapInstance = map;
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+      maxZoom: 18
+    }).addTo(map);
+
+    const bounds = [];
+    items.forEach(item => {
+      const marker = L.circleMarker([item.lat, item.lng], {
+        radius: 9,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: '#f05a1a',
+        fillOpacity: 0.92
+      }).addTo(map);
+      marker.bindPopup(
+        `<div style="min-width:190px;font-family:system-ui,sans-serif;">
+          <strong style="display:block;margin-bottom:4px;">${item.title}</strong>
+          <div style="font-size:12px;opacity:0.75;margin-bottom:6px;">${item.location}, ${item.city}</div>
+          <div style="font-weight:700;color:#b84312;margin-bottom:8px;">${item.price} (${item.listingType})</div>
+          <a href="${item.url}" style="font-size:12px;font-weight:600;color:#0d3a5e;">Inspect Residence →</a>
+        </div>`
+      );
+      bounds.push([item.lat, item.lng]);
+    });
+    if (bounds.length > 1) {
+      map.fitBounds(bounds, { padding: [32, 32], maxZoom: 13 });
+    }
+    setTimeout(() => map.invalidateSize(), 180);
+  };
+
+  document.querySelectorAll('[role="tablist"]').forEach(tablist => {
+    const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+    const activateTab = tab => {
+      tabs.forEach(t => {
+        const selected = t === tab;
+        t.setAttribute('aria-selected', selected ? 'true' : 'false');
+        t.setAttribute('tabindex', selected ? '0' : '-1');
+        const panelId = t.getAttribute('aria-controls');
+        const panel = panelId ? document.getElementById(panelId) : null;
+        if (panel) panel.hidden = !selected;
+      });
+      if (tab.dataset.mapTab === 'true') initListMap();
+    };
+
+    tabs.forEach((tab, idx) => {
+      tab.addEventListener('click', () => activateTab(tab));
+      tab.addEventListener('keydown', e => {
+        if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
+        e.preventDefault();
+        let nextIdx = idx;
+        if (e.key === 'ArrowRight') nextIdx = (idx + 1) % tabs.length;
+        if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + tabs.length) % tabs.length;
+        if (e.key === 'Home') nextIdx = 0;
+        if (e.key === 'End') nextIdx = tabs.length - 1;
+        tabs[nextIdx].focus();
+        activateTab(tabs[nextIdx]);
+      });
+    });
+  });
+
+  // K. Add/Edit Property Interactive Coordinate Picker
+  const pickerEl = document.getElementById('pn-coord-picker');
+  if (pickerEl) {
+    const latInput = document.getElementById(pickerEl.dataset.latInput || '');
+    const lngInput = document.getElementById(pickerEl.dataset.lngInput || '');
+    const startLat = parseFloat(latInput?.value || '23.7937') || 23.7937;
+    const startLng = parseFloat(lngInput?.value || '90.4066') || 90.4066;
+
+    const setCoords = (lat, lng) => {
+      if (latInput) latInput.value = Number(lat).toFixed(6);
+      if (lngInput) lngInput.value = Number(lng).toFixed(6);
+    };
+
+    document.querySelectorAll('[data-city-preset]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lat = parseFloat(btn.dataset.lat || '23.7937');
+        const lng = parseFloat(btn.dataset.lng || '90.4066');
+        setCoords(lat, lng);
+        if (window.__pnPickerMarker && window.__pnPickerMap) {
+          window.__pnPickerMarker.setLatLng([lat, lng]);
+          window.__pnPickerMap.setView([lat, lng], 13);
+        }
+      });
+    });
+
+    ensureLeaflet().then(L => {
+      if (!L) {
+        pickerEl.innerHTML = `<div style="padding:1rem;font-size:0.84rem;color:var(--g2-sand-dim);">Interactive map unavailable offline — enter Latitude &amp; Longitude above or use a city preset pill.</div>`;
+        return;
+      }
+      const map = L.map(pickerEl, { scrollWheelZoom: false }).setView([startLat, startLng], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap',
+        maxZoom: 18
+      }).addTo(map);
+      const marker = L.marker([startLat, startLng], { draggable: true }).addTo(map);
+      window.__pnPickerMap = map;
+      window.__pnPickerMarker = marker;
+
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        setCoords(pos.lat, pos.lng);
+      });
+      map.on('click', ev => {
+        marker.setLatLng(ev.latlng);
+        setCoords(ev.latlng.lat, ev.latlng.lng);
+      });
+      setTimeout(() => map.invalidateSize(), 200);
+    });
+  }
+
+  // L. AJAX Mark-All Notifications Read
+  document.addEventListener('submit', async e => {
+    const form = e.target.closest?.('form[data-ajax-mark-read]');
+    if (!form) return;
+    e.preventDefault();
+    try {
+      const res = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin'
+      });
+      if (!res.ok) {
+        form.submit();
+        return;
+      }
+      const data = await res.json();
+      document.querySelectorAll('[data-nav-notif-count]').forEach(el => {
+        el.textContent = String(data.unread_count || 0);
+        if (!data.unread_count) el.hidden = true;
+      });
+      document.querySelectorAll('.pn-notif-item.is-unread').forEach(el => el.classList.remove('is-unread'));
+      const live = document.getElementById('pn-live-status');
+      if (live) live.textContent = 'All notifications marked as read.';
     } catch (_) {
       form.submit();
     }

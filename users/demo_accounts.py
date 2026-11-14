@@ -116,9 +116,18 @@ def ensure_demo_accounts(seed_activity=False):
 
 
 def _seed_demo_activity(demo_agent, demo_client):
-    """Give the demo agent listings/leads and the demo client saved properties & tours without clobbering existing data."""
+    """Give the demo agent listings/leads and the demo client saved properties, amenities, tours & reviews without clobbering existing data."""
     from django.db.models import Count
-    from property.models import ContactMessage, Property, SavedProperty, TourBooking
+    from django.urls import reverse
+    from property.models import (
+        AMENITY_CHOICES,
+        ContactMessage,
+        Notification,
+        Property,
+        PropertyReview,
+        SavedProperty,
+        TourBooking,
+    )
 
     agent_owned_count = Property.objects.filter(agent=demo_agent).count()
     if agent_owned_count < 3 and Property.objects.exists():
@@ -145,6 +154,16 @@ def _seed_demo_activity(demo_agent, demo_client):
                 Property.objects.filter(pk__in=[p.pk for p in props_to_assign]).update(agent=demo_agent)
                 needed -= len(props_to_assign)
 
+    # Populate curated architectural amenities on existing showcase listings that lack them
+    amenity_codes = [code for code, _ in AMENITY_CHOICES]
+    props_without_amenities = list(Property.objects.order_by("id"))
+    for idx, prop in enumerate(props_without_amenities):
+        if not prop.amenities:
+            start = idx % len(amenity_codes)
+            sample = [amenity_codes[(start + offset) % len(amenity_codes)] for offset in range(4)]
+            prop.amenities = sample
+            prop.save(update_fields=["amenities"])
+
     agent_props = list(Property.objects.filter(agent=demo_agent).order_by("-id")[:3])
     all_props = agent_props or list(Property.objects.order_by("-id")[:3])
     if not all_props:
@@ -154,11 +173,12 @@ def _seed_demo_activity(demo_agent, demo_client):
         for prop in all_props[:2]:
             SavedProperty.objects.get_or_create(user=demo_client, property=prop)
 
-    if TourBooking.objects.filter(buyer=demo_client).count() == 0:
-        today = timezone.localdate()
-        first_prop = all_props[0]
-        second_prop = all_props[1] if len(all_props) > 1 else first_prop
+    first_prop = all_props[0]
+    second_prop = all_props[1] if len(all_props) > 1 else first_prop
+    third_prop = all_props[2] if len(all_props) > 2 else second_prop
+    today = timezone.localdate()
 
+    if TourBooking.objects.filter(buyer=demo_client).count() == 0:
         TourBooking.objects.create(
             property=first_prop,
             buyer=demo_client,
@@ -175,6 +195,48 @@ def _seed_demo_activity(demo_agent, demo_client):
             message="Requesting private architectural walkthrough with advisor.",
             agent_message="Looking forward to hosting you on site. Courtyard lobby keys reserved.",
             status="Confirmed",
+        )
+
+    # Ensure demo_client has at least one Completed walkthrough so verified review workflow is demonstrable immediately
+    if not TourBooking.objects.filter(buyer=demo_client, status="Completed").exists():
+        TourBooking.objects.create(
+            property=third_prop,
+            buyer=demo_client,
+            scheduled_date=today - timedelta(days=4),
+            scheduled_time="14:00:00",
+            message="Afternoon solar study & acoustics walkthrough completed.",
+            agent_message="Thank you for visiting! Digital dossier & floorplan measurements attached.",
+            status="Completed",
+        )
+
+    # Seed verified walkthrough review if missing on third_prop
+    if third_prop.agent_id != demo_client.id and not PropertyReview.objects.filter(
+        property=third_prop, reviewer=demo_client
+    ).exists():
+        PropertyReview.objects.create(
+            property=third_prop,
+            reviewer=demo_client,
+            rating=5,
+            comment="Exceptionally quiet cross-ventilated layout, double-glazed terrace views, and thorough advisor briefing.",
+        )
+
+    # Ensure demo_client has an unread welcome/tour notification badge visible
+    if Notification.objects.filter(recipient=demo_client).count() == 0:
+        Notification.objects.create(
+            recipient=demo_client,
+            actor=demo_agent,
+            category="tour",
+            title=f"Tour Confirmed: {second_prop.title}",
+            message="Advisor Arfan confirmed your upcoming private walkthrough at 16:30. Lobby pass is ready.",
+            link=reverse("my_tours"),
+        )
+        Notification.objects.create(
+            recipient=demo_client,
+            actor=demo_agent,
+            category="review",
+            title=f"Review Unlocked: {third_prop.title}",
+            message="Your walkthrough was marked Completed — share your verified buyer impression anytime.",
+            link=f"{reverse('property_detail', kwargs={'id': third_prop.id})}#reviews",
         )
 
     if ContactMessage.objects.count() == 0:

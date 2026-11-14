@@ -18,11 +18,16 @@ urlpatterns = [
     ),
     # Public Agent Showcase & Detail
     path("properties/agent/<int:pk>/", views.AgentProperty, name="properties_by_agent"),
+    path("properties/compare/", views.ComparePropertiesView, name="compare_properties"),
     path("property/<int:id>/", views.PropertyDetailView.as_view(), name="property_detail"),
+    path("property/<int:id>/review/", views.SubmitPropertyReviewView, name="submit_property_review"),
     path("property/<int:id>/toggle-save/", views.ToggleSavePropertyView, name="save_property"),
     path("saved-properties/", views.SavedPropertiesView, name="saved_properties"),
     path("my-tours/", views.MyTourBookingsView, name="my_tours"),
     path("my-tours/cancel/<int:booking_id>/", views.CancelMyTourView, name="cancel_my_tour"),
+    path("notifications/", views.NotificationListView, name="notifications"),
+    path("notifications/<int:pk>/read/", views.MarkNotificationReadView, name="mark_notification_read"),
+    path("notifications/read-all/", views.MarkAllNotificationsReadView, name="mark_all_notifications_read"),
     # Admin Portal
     path("admin-panel/dashboard/", views.AdminDashboardView, name="admin_dashboard"),
     path("admin-panel/properties/", views.AdminPropertyListView, name="admin_property_list"),

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Center — PropNest Real Estate{% endblock %}
+
+{% block content %}
+<div class="pn-page">
+  <div class="pn-container pn-stack-lg" style="max-width:920px;">
+    <div class="pn-row-between" style="align-items:flex-end;">
+      <div>
+        <p class="pn-kicker">Activity &amp; Updates • {{ unread_count }} Unread</p>
+        <h1 class="pn-h1" style="margin:0.4rem 0 0;">Notification Center</h1>
+      </div>
+      {% if unread_count %}
+        <form method="POST" action="{% url 'mark_all_notifications_read' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button type="submit" class="pn-btn pn-btn-primary pn-btn-sm">Mark All as Read ✓</button>
+        </form>
+      {% endif %}
+    </div>
+
+    {% if notifications %}
+      <div class="pn-stack-sm">
+        {% for notif in notifications %}
+          <article class="pn-card pn-row-between {% if not notif.is_read %}is-unread{% endif %}" style="padding:1.25rem 1.45rem;gap:1rem;align-items:center;border-color:{% if not notif.is_read %}color-mix(in srgb, var(--g2-ember) 60%, var(--pn-border)){% else %}var(--pn-border){% endif %};">
+            <div class="pn-stack-xs" style="flex:1 1 auto;">
+              <div class="pn-row" style="gap:0.55rem;">
+                <span class="pn-badge {% if notif.category == 'tour' %}pn-badge-pending{% elif notif.category == 'review' %}pn-badge-confirmed{% else %}pn-badge-ember{% endif %}">
+                  {{ notif.get_category_display }}
+                </span>
+                {% if not notif.is_read %}
+                  <span class="pn-badge" style="background:var(--g2-ember);border-color:var(--g2-ember);color:#fff;">Unread</span>
+                {% endif %}
+                <span class="pn-muted" style="font-size:0.75rem;">{{ notif.created_at|date:"M d, Y · h:i A" }}</span>
+              </div>
+              <h2 class="pn-h3" style="margin:0.15rem 0 0;">{{ notif.title }}</h2>
+              <p class="pn-muted" style="margin:0;font-size:0.9rem;line-height:1.55;">{{ notif.message }}</p>
+            </div>
+
+            <form method="POST" action="{% url 'mark_notification_read' notif.id %}" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="pn-btn pn-btn-sm {% if not notif.is_read %}pn-btn-primary{% endif %}">
+                {% if notif.link %}Inspect →{% else %}Mark Read{% endif %}
+              </button>
+            </form>
+          </article>
+        {% endfor %}
+      </div>
+
+      {% include "includes/pagination.html" with page_obj=page_obj querystring="" %}
+    {% else %}
+      <div class="pn-empty-state pn-stack-md" style="align-items:center;">
+        <p class="pn-kicker">All Clear</p>
+        <h2 class="pn-h2" style="margin:0;">No notifications yet.</h2>
+        <p class="pn-muted" style="margin:0;">Tour scheduling confirmations, advisor notes, and verified residence updates appear here automatically.</p>
+        <a href="{% url 'property_list' %}" class="pn-btn pn-btn-primary">Browse Residences</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

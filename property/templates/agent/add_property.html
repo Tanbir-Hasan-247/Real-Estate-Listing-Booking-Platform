@@ -104,12 +104,45 @@
       </div>
     </div>
 
+    <div class="pn-field">
+      <div class="pn-row-between" style="margin-bottom:0.5rem;flex-wrap:wrap;gap:0.5rem;">
+        <span class="pn-label" style="margin:0;">Interactive Pin Location Picker (Click map or select city hub)</span>
+        <div class="pn-row" style="gap:0.35rem;flex-wrap:wrap;">
+          <button type="button" data-city-preset data-lat="23.7937" data-lng="90.4066" class="pn-btn pn-btn-sm">Gulshan / Dhaka</button>
+          <button type="button" data-city-preset data-lat="23.7461" data-lng="90.3742" class="pn-btn pn-btn-sm">Dhanmondi</button>
+          <button type="button" data-city-preset data-lat="22.3569" data-lng="91.7832" class="pn-btn pn-btn-sm">Chattogram</button>
+          <button type="button" data-city-preset data-lat="24.8949" data-lng="91.8687" class="pn-btn pn-btn-sm">Sylhet</button>
+        </div>
+      </div>
+      <div id="pn-coord-picker"
+           class="pn-map-picker-canvas"
+           data-lat-input="{{ form.latitude.id_for_label }}"
+           data-lng-input="{{ form.longitude.id_for_label }}"
+           aria-label="Interactive property coordinate map picker"></div>
+    </div>
+
     {% if form.assigned_agent %}
       <div class="pn-field">
         <label for="{{ form.assigned_agent.id_for_label }}" class="pn-label">Assigned Licensed Advisor (Admin Override)</label>
         {{ form.assigned_agent }}
       </div>
     {% endif %}
+
+    <fieldset class="pn-field" style="border:1px solid var(--pn-border);border-radius:14px;padding:1rem 1.15rem;margin-bottom:1.25rem;">
+      <legend class="pn-label" style="padding:0 0.45rem;margin-bottom:0;">Architectural Amenities &amp; Building Features</legend>
+      <div style="margin-top:0.55rem;">
+        <ul class="pn-amenity-grid">
+          {% for checkbox in form.amenities %}
+            <li>
+              <label for="{{ checkbox.id_for_label }}" style="display:flex;align-items:center;gap:0.5rem;width:100%;cursor:pointer;">
+                {{ checkbox.tag }}
+                <span>{{ checkbox.choice_label }}</span>
+              </label>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </fieldset>
 
     <div class="pn-field">
       <label for="{{ form.description.id_for_label }}" class="pn-label">Architectural Narrative &amp; Highlights *</label>

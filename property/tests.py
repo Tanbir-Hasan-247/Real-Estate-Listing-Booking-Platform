@@ -7,7 +7,16 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import ContactMessage, Property, PropertyImage, PropertyType, SavedProperty, TourBooking
+from .models import (
+    ContactMessage,
+    Notification,
+    Property,
+    PropertyImage,
+    PropertyReview,
+    PropertyType,
+    SavedProperty,
+    TourBooking,
+)
 
 User = get_user_model()
 
@@ -357,3 +366,126 @@ class PropNestPlatformTests(TestCase):
         csv_text = csv_res.content.decode("utf-8")
         self.assertIn("Golpo Aleya Sky Residence", csv_text)
         self.assertIn("Dhaka", csv_text)
+
+    def test_security_guards_post_save_open_redirect_and_seo_routes(self):
+        self.client.force_login(self.buyer)
+        save_url = reverse("save_property", kwargs={"id": self.prop1.id})
+
+        # GET on state-mutating save endpoint must be rejected (405 Method Not Allowed)
+        self.assertEqual(self.client.get(save_url).status_code, 405)
+
+        # Open redirect attempt via next/Referer must not leave site
+        res = self.client.post(save_url, {"next": "https://evil.example/phish"})
+        self.assertEqual(res.status_code, 302)
+        self.assertNotIn("evil.example", res["Location"])
+
+        # SEO, favicon & 404 routes
+        fav_res = self.client.get("/favicon.ico")
+        self.assertEqual(fav_res.status_code, 301)
+
+        robots_res = self.client.get(reverse("robots_txt"))
+        self.assertEqual(robots_res.status_code, 200)
+        self.assertIn("Sitemap:", robots_res.content.decode("utf-8"))
+
+        sitemap_res = self.client.get(reverse("sitemap_xml"))
+        self.assertEqual(sitemap_res.status_code, 200)
+        self.assertIn(f"/property/{self.prop1.id}/", sitemap_res.content.decode("utf-8"))
+
+        with override_settings(DEBUG=False):
+            missing_res = self.client.get("/nonexistent-residence-route/")
+            self.assertEqual(missing_res.status_code, 404)
+            self.assertIn("architectural record could not be located", missing_res.content.decode("utf-8"))
+
+    def test_property_type_id_and_amenity_filtering_and_comparison(self):
+        self.prop1.amenities = ["elevator", "rooftop"]
+        self.prop1.save(update_fields=["amenities"])
+        self.prop2.amenities = ["security"]
+        self.prop2.save(update_fields=["amenities"])
+
+        # Integer property_type filter (previously broken dropdown value)
+        res_id = self.client.get(reverse("property_list"), {"property_type": str(self.ptype_apt.id)})
+        self.assertEqual(res_id.status_code, 200)
+        self.assertEqual([p.id for p in res_id.context["properties"]], [self.prop1.id])
+
+        # Amenity filter
+        res_am = self.client.get(reverse("property_list"), {"amenity": "rooftop"})
+        self.assertEqual(res_am.status_code, 200)
+        self.assertEqual([p.id for p in res_am.context["properties"]], [self.prop1.id])
+
+        # Side-by-side compare page
+        cmp_res = self.client.get(reverse("compare_properties"), {"ids": f"{self.prop1.id},{self.prop2.id}"})
+        self.assertEqual(cmp_res.status_code, 200)
+        self.assertContains(cmp_res, self.prop1.title)
+        self.assertContains(cmp_res, self.prop2.title)
+        self.assertContains(cmp_res, "Private Elevator")
+
+    def test_booking_availability_duplicate_and_slot_collision_guards(self):
+        future = (datetime.date.today() + datetime.timedelta(days=4)).isoformat()
+        detail_url = reverse("property_detail", kwargs={"id": self.prop1.id})
+
+        # Non-available property rejects bookings
+        self.prop1.status = "sold"
+        self.prop1.save(update_fields=["status"])
+        self.client.force_login(self.buyer)
+        self.client.post(detail_url, {"scheduled_date": future, "scheduled_time": "12:00", "message": "Try"})
+        self.assertEqual(TourBooking.objects.count(), 0)
+
+        self.prop1.status = "available"
+        self.prop1.save(update_fields=["status"])
+
+        # First booking creates Pending request; duplicate Pending by same buyer is blocked
+        self.client.post(detail_url, {"scheduled_date": future, "scheduled_time": "12:00", "message": "First"})
+        self.client.post(detail_url, {"scheduled_date": future, "scheduled_time": "14:00", "message": "Duplicate"})
+        self.assertEqual(TourBooking.objects.filter(property=self.prop1, buyer=self.buyer).count(), 1)
+
+        # Confirmed time slot collision across another buyer is rejected
+        booking = TourBooking.objects.get(property=self.prop1, buyer=self.buyer)
+        booking.status = "Confirmed"
+        booking.save()
+
+        buyer2 = User.objects.create_user(
+            username="buyer_two",
+            email="buyer2@example.com",
+            password="StrongPass!2026",
+            role=User.BUYER,
+            is_active=True,
+        )
+        self.client.force_login(buyer2)
+        self.client.post(detail_url, {"scheduled_date": future, "scheduled_time": "12:00", "message": "Collision"})
+        self.assertEqual(TourBooking.objects.filter(property=self.prop1, buyer=buyer2).count(), 0)
+
+    def test_notifications_and_verified_buyer_reviews(self):
+        future = datetime.date.today() + datetime.timedelta(days=2)
+        booking = TourBooking.objects.create(
+            property=self.prop1,
+            buyer=self.buyer,
+            scheduled_date=future,
+            scheduled_time="11:30:00",
+            status="Pending",
+        )
+        # Agent received notification for newly created tour request
+        self.assertTrue(Notification.objects.filter(recipient=self.agent, category="tour").exists())
+
+        # Uncompleted tour cannot submit verified review
+        self.client.force_login(self.buyer)
+        review_url = reverse("submit_property_review", kwargs={"id": self.prop1.id})
+        self.client.post(review_url, {"rating": "5", "comment": "Premature review"})
+        self.assertEqual(PropertyReview.objects.count(), 0)
+
+        # Complete tour -> buyer gets notification & review unlocks
+        booking.status = "Completed"
+        booking.save()
+        self.assertTrue(Notification.objects.filter(recipient=self.buyer, category="tour").exists())
+
+        self.client.post(review_url, {"rating": "5", "comment": "Brilliant daylight and calm courtyard."})
+        self.assertEqual(PropertyReview.objects.filter(property=self.prop1, reviewer=self.buyer).count(), 1)
+        self.assertTrue(Notification.objects.filter(recipient=self.agent, category="review").exists())
+
+        # Property detail renders verified review and rating
+        detail_res = self.client.get(reverse("property_detail", kwargs={"id": self.prop1.id}))
+        self.assertContains(detail_res, "Brilliant daylight and calm courtyard.")
+        self.assertContains(detail_res, "5.0 / 5.0 Average")
+
+        # Mark all notifications read
+        self.client.post(reverse("mark_all_notifications_read"))
+        self.assertEqual(Notification.objects.filter(recipient=self.buyer, is_read=False).count(), 0)

@@ -5,7 +5,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="description" content="{% block meta_description %}PropNest Real Estate — Architectural residences, curated investments, and private advisory tours across prime urban districts.{% endblock %}">
+  <meta property="og:site_name" content="PropNest Real Estate">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}PropNest Real Estate — Architectural Living &amp; Private Holdings{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}PropNest Real Estate — Architectural residences, curated investments, and private advisory tours across prime urban districts.{% endblock %}">
+  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  {% block og_image_meta %}<meta property="og:image" content="https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-exterior-dusk.avif">{% endblock %}
+  <meta name="twitter:card" content="summary_large_image">
   <title>{% block title %}PropNest Real Estate — Architectural Living &amp; Private Holdings{% endblock %}</title>
 
   <script>
@@ -91,11 +99,15 @@
         <nav class="pn-header-links" aria-label="Primary quick navigation">
           <a href="{% url 'property_list' %}" class="g2-nav text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" style="font-size:0.74rem;">Residences</a>
           <a href="{% url 'agent_list' %}" class="g2-nav text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" style="font-size:0.74rem;">Advisors</a>
+          <a href="{% url 'compare_properties' %}" class="g2-nav text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" style="font-size:0.74rem;">Compare</a>
           <a href="{% url 'contact' %}" class="g2-nav text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" style="font-size:0.74rem;">Contact</a>
           {% if user.is_authenticated %}
             <a href="{% url 'saved_properties' %}" class="g2-nav text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" style="font-size:0.74rem;display:inline-flex;align-items:center;gap:0.35rem;">
               Saved <span data-nav-saved-count style="background:var(--g2-ember);color:#fff;padding:0.12rem 0.45rem;border-radius:999px;font-size:0.62rem;">{{ saved_properties_count }}</span>
             </a>
+            <button type="button" popovertarget="pn-notif-popover" class="pn-notif-trigger" aria-label="Toggle notification alerts">
+              Alerts <span data-nav-notif-count class="pn-notif-badge" {% if not unread_notifications_count %}hidden{% endif %}>{{ unread_notifications_count }}</span>
+            </button>
             {% if user.is_superuser or user.role == 'admin' %}
               <a href="{% url 'admin_dashboard' %}" class="g2-nav text-[var(--g2-gold)] transition-colors hover:text-[var(--g2-sand)]" style="font-size:0.74rem;display:inline-flex;align-items:center;gap:0.35rem;">
                 Admin{% if pending_admin_tours_count %} <span style="background:var(--g2-ember);color:#fff;padding:0.1rem 0.4rem;border-radius:999px;font-size:0.6rem;">{{ pending_admin_tours_count }}</span>{% endif %}
@@ -129,6 +141,45 @@
         </div>
       </div>
     </header>
+
+    {% if user.is_authenticated %}
+      <div id="pn-notif-popover" popover class="pn-notif-popover" aria-label="Notification Alerts">
+        <div class="pn-row-between" style="margin-bottom:0.85rem;">
+          <p class="pn-kicker" style="margin:0;">Notification Center</p>
+          <div class="pn-row" style="gap:0.5rem;">
+            {% if unread_notifications_count %}
+              <form method="POST" action="{% url 'mark_all_notifications_read' %}" data-ajax-mark-read style="margin:0;">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="pn-btn pn-btn-sm" style="padding:0.25rem 0.6rem;font-size:0.66rem;">Mark All Read</button>
+              </form>
+            {% endif %}
+            <a href="{% url 'notifications' %}" class="pn-btn pn-btn-sm pn-btn-primary" style="padding:0.25rem 0.6rem;font-size:0.66rem;">View All</a>
+          </div>
+        </div>
+        {% if recent_notifications %}
+          <div class="pn-stack-xs">
+            {% for notif in recent_notifications %}
+              <div class="pn-notif-item {% if not notif.is_read %}is-unread{% endif %}">
+                <div class="pn-row-between" style="gap:0.5rem;">
+                  <strong style="font-size:0.8rem;color:var(--g2-sand);">{{ notif.title }}</strong>
+                  <span class="pn-muted" style="font-size:0.66rem;white-space:nowrap;">{{ notif.created_at|timesince }} ago</span>
+                </div>
+                <p class="pn-muted" style="margin:0;font-size:0.74rem;line-height:1.4;">{{ notif.message|truncatewords:18 }}</p>
+                {% if notif.link %}
+                  <form method="POST" action="{% url 'mark_notification_read' notif.id %}" style="margin:0.2rem 0 0;">
+                    {% csrf_token %}
+                    <button type="submit" style="background:transparent;border:0;padding:0;color:var(--g2-gold);font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;">Inspect →</button>
+                  </form>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="pn-muted" style="margin:0;font-size:0.84rem;">You are all caught up — no recent notifications.</p>
+        {% endif %}
+      </div>
+    {% endif %}
 
     <!-- Fullscreen WebGL 3D Interactive Navigation Overlay (Exact 2-Col Cylinder Grid) -->
     <div id="g2-main-menu" role="dialog" aria-modal="true" aria-label="Main menu" aria-hidden="true" inert tabindex="-1" class="g2-menu-dialog fixed inset-0 z-[55] bg-[var(--g2-ink)] outline-none" style="clip-path: inset(0% 0% 100% 0%);">
@@ -214,6 +265,8 @@
             {% if user.is_authenticated %}
               <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;padding-bottom:0.65rem;">
                 <a href="{% url 'profile' %}" class="g2-nav text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" style="font-size:0.72rem;">Profile ({{ user.username }})</a>
+                <a href="{% url 'notifications' %}" class="g2-nav text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" style="font-size:0.72rem;">Alerts ({{ unread_notifications_count }})</a>
+                <a href="{% url 'compare_properties' %}" class="g2-nav text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" style="font-size:0.72rem;">Compare</a>
                 {% if user.role == 'agent' or user.is_superuser or user.role == 'admin' %}
                   <a href="{% url 'add_property' %}" class="g2-nav text-[var(--g2-gold)] hover:text-[var(--g2-sand)]" style="font-size:0.72rem;">+ List Property</a>
                 {% endif %}
@@ -310,6 +363,7 @@
                 {% if user.is_authenticated %}
                   <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'saved_properties' %}">Saved Residences ({{ saved_properties_count }})</a></li>
                   <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'my_tours' %}">Scheduled Tours</a></li>
+                  <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'notifications' %}">Notifications ({{ unread_notifications_count }})</a></li>
                   {% if user.is_superuser or user.role == 'admin' %}
                     <li><a class="text-[var(--g2-gold)] transition-colors hover:text-[var(--g2-sand)]" href="{% url 'admin_dashboard' %}">Admin Console</a></li>
                   {% elif user.role == 'agent' %}
@@ -319,6 +373,7 @@
                   <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'login' %}">Client Sign In</a></li>
                   <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'register' %}">Create Account</a></li>
                 {% endif %}
+                <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'compare_properties' %}">Compare Residences</a></li>
                 <li><a class="text-[var(--g2-sand)] transition-colors hover:text-[var(--g2-gold)]" href="{% url 'contact' %}">Contact</a></li>
               </ul>
             </nav>
@@ -394,6 +449,15 @@
         </div>
       </div>
     </dialog>
+
+    <!-- Floating Comparison Dock & Polite Live Announcer -->
+    <div id="pn-live-status" class="visually-hidden" role="status" aria-live="polite"></div>
+    <aside id="pn-compare-bar" class="pn-compare-bar pn-native-cursor" hidden aria-label="Residence comparison dock">
+      <span class="pn-kicker" style="margin:0;color:var(--g2-gold);">Compare Tray</span>
+      <span data-compare-count style="font-size:0.8rem;font-weight:600;">0/4 Selected</span>
+      <a href="{% url 'compare_properties' %}" data-compare-link data-base-href="{% url 'compare_properties' %}" class="pn-btn pn-btn-primary pn-btn-sm">Compare Now →</a>
+      <button type="button" data-compare-clear class="pn-btn pn-btn-sm">Clear</button>
+    </aside>
 
     {% block extra_modals %}{% endblock %}
   </div>

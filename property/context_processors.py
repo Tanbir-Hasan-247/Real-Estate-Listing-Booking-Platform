@@ -1,4 +1,4 @@
-from property.models import ContactMessage, Property, SavedProperty, TourBooking
+from property.models import ContactMessage, Notification, Property, SavedProperty, TourBooking
 
 
 def propnest_context(request):
@@ -8,6 +8,8 @@ def propnest_context(request):
         "pending_admin_tours_count": 0,
         "unresolved_inquiries_count": 0,
         "saved_properties_count": 0,
+        "unread_notifications_count": 0,
+        "recent_notifications": [],
     }
     try:
         ctx["nav_featured_properties"] = (
@@ -18,6 +20,11 @@ def propnest_context(request):
         user = getattr(request, "user", None)
         if user and user.is_authenticated:
             ctx["saved_properties_count"] = SavedProperty.objects.filter(user=user).count()
+            unread_qs = Notification.objects.filter(recipient=user, is_read=False)
+            ctx["unread_notifications_count"] = unread_qs.count()
+            ctx["recent_notifications"] = list(
+                Notification.objects.filter(recipient=user).select_related("actor")[:6]
+            )
             if getattr(user, "role", None) == "agent":
                 ctx["pending_agent_tours_count"] = TourBooking.objects.filter(
                     property__agent=user, status="Pending"
@@ -32,4 +39,5 @@ def propnest_context(request):
     except Exception:
         # During initial migrations before tables exist, fail safely without crashing templates
         ctx["nav_featured_properties"] = []
+        ctx["recent_notifications"] = []
     return ctx

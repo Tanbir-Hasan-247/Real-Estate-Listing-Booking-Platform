@@ -47,7 +47,7 @@
 
   <div class="pn-prop-card-body">
     <div class="pn-row-between" style="align-items:baseline;">
-      <span class="pn-kicker">{{ prop.property_type.name }}</span>
+      <span class="pn-kicker">{{ prop.property_type.name }}{% if prop.average_rating %} · ★ {{ prop.average_rating }}{% endif %}</span>
       <span class="g2-display" style="font-size:1.35rem;font-weight:400;color:var(--g2-gold);font-variant-numeric:tabular-nums;">
         ${{ prop.price|floatformat:0 }}{% if prop.listing_type == 'rent' %}<span style="font-size:0.75rem;color:var(--g2-sand-dim);">/mo</span>{% endif %}
       </span>
@@ -61,6 +61,17 @@
       </h3>
       <p class="pn-muted" style="margin:0.25rem 0 0;font-size:0.84rem;">{{ prop.location }}, {{ prop.city }}</p>
     </div>
+
+    {% if prop.amenity_labels %}
+      <div class="pn-amenity-pill-row">
+        {% for am_label in prop.amenity_labels|slice:":2" %}
+          <span class="pn-amenity-pill">{{ am_label }}</span>
+        {% endfor %}
+        {% if prop.amenity_labels|length > 2 %}
+          <span class="pn-amenity-pill">+{{ prop.amenity_labels|length|add:"-2" }}</span>
+        {% endif %}
+      </div>
+    {% endif %}
 
     <div class="pn-prop-specs">
       <div>
@@ -87,9 +98,19 @@
         <span style="font-size:0.8rem;">{{ prop.agent.get_full_name|default:prop.agent.username }}</span>
       </a>
 
-      <a href="{% url 'property_detail' prop.id %}" class="pn-btn pn-btn-sm">
-        Inspect →
-      </a>
+      <div class="pn-row" style="gap:0.45rem;">
+        <button type="button"
+                data-compare-toggle
+                data-prop-id="{{ prop.id }}"
+                data-prop-title="{{ prop.title }}"
+                aria-pressed="false"
+                class="pn-btn pn-btn-sm pn-compare-btn">
+          <span data-compare-label>+ Compare</span>
+        </button>
+        <a href="{% url 'property_detail' prop.id %}" class="pn-btn pn-btn-sm">
+          Inspect →
+        </a>
+      </div>
     </div>
   </div>
 </article>

@@ -2,8 +2,9 @@ from datetime import date
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
-from .models import ContactMessage, Property, PropertyType, TourBooking
+from .models import AMENITY_CHOICES, ContactMessage, Property, PropertyReview, PropertyType, TourBooking
 
 User = get_user_model()
 
@@ -31,6 +32,12 @@ class PropertyForm(forms.ModelForm):
         required=False,
         label="Property Gallery Images",
     )
+    amenities = forms.MultipleChoiceField(
+        choices=AMENITY_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Architectural Amenities",
+    )
 
     class Meta:
         model = Property
@@ -49,6 +56,7 @@ class PropertyForm(forms.ModelForm):
             "state",
             "latitude",
             "longitude",
+            "amenities",
             "is_featured",
         ]
         widgets = {
@@ -97,6 +105,8 @@ class PropertyForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             if field_name == "images":
                 field.widget.attrs.update({"class": "pn-input", "multiple": True, "accept": "image/*"})
+            elif isinstance(field.widget, forms.CheckboxSelectMultiple):
+                field.widget.attrs.update({"class": "pn-amenity-check-input"})
             elif isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs.update({"class": "pn-checkbox"})
             elif isinstance(field.widget, forms.Select):
@@ -105,6 +115,9 @@ class PropertyForm(forms.ModelForm):
                 field.widget.attrs.update({"class": "pn-textarea"})
             else:
                 field.widget.attrs.update({"class": "pn-input"})
+
+    def clean_amenities(self):
+        return list(self.cleaned_data.get("amenities") or [])
 
     def clean_status(self):
         return self.cleaned_data.get("status") or (self.instance.status if self.instance.pk else "available")
@@ -142,6 +155,48 @@ class TourBookingForm(forms.ModelForm):
         if scheduled and scheduled < date.today():
             raise forms.ValidationError("Please choose today or a future date for your private tour.")
         return scheduled
+
+    def clean(self):
+        cleaned = super().clean()
+        scheduled_date = cleaned.get("scheduled_date")
+        scheduled_time = cleaned.get("scheduled_time")
+        if scheduled_date and scheduled_time and scheduled_date == timezone.localdate():
+            if scheduled_time <= timezone.localtime().time():
+                self.add_error(
+                    "scheduled_time",
+                    "Please choose a future time slot when booking a tour for today.",
+                )
+        return cleaned
+
+
+class PropertyReviewForm(forms.ModelForm):
+    rating = forms.ChoiceField(
+        choices=[(str(i), f"{i} ★") for i in range(5, 0, -1)],
+        widget=forms.RadioSelect,
+        label="Overall Rating",
+    )
+
+    class Meta:
+        model = PropertyReview
+        fields = ["rating", "comment"]
+        widgets = {
+            "comment": forms.Textarea(
+                attrs={
+                    "class": "pn-textarea",
+                    "rows": 3,
+                    "placeholder": "Share impressions from your walkthrough: natural light, finish quality, noise isolation, or advisor briefing...",
+                }
+            )
+        }
+
+    def clean_rating(self):
+        try:
+            val = int(self.cleaned_data["rating"])
+        except (TypeError, ValueError):
+            raise forms.ValidationError("Select a rating from 1 to 5 stars.")
+        if not 1 <= val <= 5:
+            raise forms.ValidationError("Rating must be between 1 and 5.")
+        return val
 
 
 class PropertyTypeForm(forms.ModelForm):

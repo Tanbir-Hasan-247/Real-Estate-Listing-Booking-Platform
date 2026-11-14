@@ -31,9 +31,11 @@
     <span class="pn-muted" style="font-size:0.8rem;">Awaiting response</span>
   </div>
   <div class="pn-kpi-card">
-    <span class="pn-kicker">Buyer Saves</span>
+    <span class="pn-kicker">Buyer Saves &amp; Rating</span>
     <span class="pn-kpi-val">{{ saved_leads_count }}</span>
-    <span class="pn-muted" style="font-size:0.8rem;">Shortlisted interests</span>
+    <span class="pn-muted" style="font-size:0.8rem;">
+      Shortlists · {% if agent_avg_rating %}★ {{ agent_avg_rating }} ({{ agent_reviews_count }}){% else %}No reviews yet{% endif %}
+    </span>
   </div>
 </div>
 

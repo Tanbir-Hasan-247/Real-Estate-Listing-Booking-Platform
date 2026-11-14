@@ -1,10 +1,13 @@
 import logging
+from xml.sax.saxutils import escape as xml_escape
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
-from django.db.models import Count, Q
+from django.db import connection
+from django.db.models import Avg, Count, Q
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.templatetags.static import static
 from django.urls import reverse
@@ -12,7 +15,16 @@ from django.views import View
 from django.views.generic import ListView
 
 from property.forms import ContactForm
-from property.models import Property, PropertyType, SavedProperty, TourBooking, is_placeholder_image
+from property.models import (
+    AMENITY_CHOICES,
+    AMENITY_LABEL_MAP,
+    Property,
+    PropertyType,
+    SavedProperty,
+    TourBooking,
+    is_placeholder_image,
+    resolve_arch_fallback,
+)
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -28,12 +40,12 @@ HERO_SHOWCASE_BACKDROPS = [
     {
         "sm": "https://www.golpoholdings.com/golpo/golpo-aleya/phone/golpo-aleya-phone-hero.avif",
         "lg": "https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-exterior-dusk.avif",
-        "card": "https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-exterior-dusk.m.avif",
+        "card": "https://www.golpoholdings.com/golpo/golpo-aleya/golpo-aleya-exterior-dusk.avif",
     },
     {
         "sm": "https://www.golpoholdings.com/golpo/golpo-dar-e-salam/phone/golpo-dar-e-salam-phone-hero.avif",
         "lg": "https://www.golpoholdings.com/golpo/golpo-dar-e-salam/exterior-hero.avif",
-        "card": "https://www.golpoholdings.com/golpo/golpo-dar-e-salam/exterior-hero.m.avif",
+        "card": "https://www.golpoholdings.com/golpo/golpo-dar-e-salam/exterior-hero.avif",
     },
 ]
 
@@ -43,8 +55,7 @@ def _property_image_url(prop, idx=0):
     for img in imgs:
         if not is_placeholder_image(img.image):
             return img.image.url
-    fallback_idx = idx % 6
-    return static(f"assets/menu-{fallback_idx}.avif")
+    return resolve_arch_fallback(idx)
 
 
 def _hero_image_pair(prop, idx=0):
@@ -177,10 +188,23 @@ class PropertyListView(ListView):
     context_object_name = "properties"
     paginate_by = 9
 
+    def _selected_amenities(self):
+        raw = []
+        for val in self.request.GET.getlist("amenity"):
+            for part in val.split(","):
+                code = part.strip()
+                if code in AMENITY_LABEL_MAP and code not in raw:
+                    raw.append(code)
+        return raw
+
     def get_queryset(self):
         queryset = (
             Property.objects.select_related("property_type", "agent")
             .prefetch_related("images")
+            .annotate(
+                avg_rating=Avg("reviews__rating"),
+                reviews_total=Count("reviews", distinct=True),
+            )
             .filter(status="available")
         )
         search_query = (self.request.GET.get("search") or "").strip()
@@ -191,6 +215,7 @@ class PropertyListView(ListView):
         min_price = (self.request.GET.get("min_price") or "").strip()
         max_price = (self.request.GET.get("max_price") or "").strip()
         sort_by = (self.request.GET.get("sort") or "").strip()
+        selected_amenities = self._selected_amenities()
 
         if search_query:
             queryset = queryset.filter(
@@ -202,7 +227,10 @@ class PropertyListView(ListView):
         if listing_type in {"sale", "rent"}:
             queryset = queryset.filter(listing_type=listing_type)
         if property_type:
-            queryset = queryset.filter(property_type__name__iexact=property_type)
+            if property_type.isdigit():
+                queryset = queryset.filter(property_type_id=int(property_type))
+            else:
+                queryset = queryset.filter(property_type__name__iexact=property_type)
         if city:
             queryset = queryset.filter(city__iexact=city)
         if bedrooms and bedrooms.isdigit():
@@ -217,6 +245,17 @@ class PropertyListView(ListView):
                 queryset = queryset.filter(price__lte=float(max_price))
             except ValueError:
                 pass
+        if selected_amenities:
+            if connection.vendor == "postgresql":
+                for code in selected_amenities:
+                    queryset = queryset.filter(amenities__contains=[code])
+            else:
+                matching_ids = [
+                    pid
+                    for pid, am in queryset.values_list("id", "amenities")
+                    if all(code in (am or []) for code in selected_amenities)
+                ]
+                queryset = queryset.filter(id__in=matching_ids)
 
         if sort_by == "price_asc":
             queryset = queryset.order_by("price")
@@ -224,6 +263,8 @@ class PropertyListView(ListView):
             queryset = queryset.order_by("-price")
         elif sort_by == "area_desc":
             queryset = queryset.order_by("-area_sqft")
+        elif sort_by == "rating_desc":
+            queryset = queryset.order_by("-avg_rating", "-is_featured", "-created_at")
         else:
             queryset = queryset.order_by("-is_featured", "-created_at")
 
@@ -245,8 +286,35 @@ class PropertyListView(ListView):
         query_params = self.request.GET.copy()
         query_params.pop("page", None)
 
+        map_properties = []
+        for idx, prop in enumerate(self.object_list[:40]):
+            lat = float(prop.latitude) if prop.latitude is not None else None
+            lng = float(prop.longitude) if prop.longitude is not None else None
+            if lat is None or lng is None:
+                lat, lng = DEFAULT_DHAKA_ZONES[idx % len(DEFAULT_DHAKA_ZONES)]
+            map_properties.append(
+                {
+                    "id": prop.id,
+                    "title": prop.title,
+                    "city": prop.city,
+                    "location": prop.location,
+                    "listingType": prop.get_listing_type_display(),
+                    "price": f"${prop.price:,.0f}",
+                    "bedrooms": prop.bedrooms or 0,
+                    "bathrooms": prop.bathrooms or 0,
+                    "area": prop.area_sqft,
+                    "lat": lat,
+                    "lng": lng,
+                    "url": reverse("property_detail", kwargs={"id": prop.id}),
+                    "img": _property_image_url(prop, idx),
+                }
+            )
+
         context["saved_ids"] = saved_ids
         context["property_types"] = PropertyType.objects.all().order_by("name")
+        context["amenity_choices"] = AMENITY_CHOICES
+        context["selected_amenities"] = self._selected_amenities()
+        context["map_properties"] = map_properties
         context["cities"] = (
             Property.objects.filter(status="available")
             .values_list("city", flat=True)
@@ -356,3 +424,48 @@ class ContactView(View):
 
         messages.error(request, "Please complete all required fields before submitting.")
         return render(request, "contact.html", {"form": form})
+
+
+class RobotsTxtView(View):
+    def get(self, request):
+        sitemap_url = request.build_absolute_uri(reverse("sitemap_xml"))
+        lines = [
+            "User-agent: *",
+            "Allow: /",
+            "Disallow: /admin/",
+            "Disallow: /admin-panel/",
+            "Disallow: /agent/dashboard/",
+            "Disallow: /notifications/",
+            f"Sitemap: {sitemap_url}",
+        ]
+        return HttpResponse("\n".join(lines) + "\n", content_type="text/plain; charset=utf-8")
+
+
+class SitemapXmlView(View):
+    def get(self, request):
+        static_paths = [
+            reverse("home"),
+            reverse("property_list"),
+            reverse("agent_list"),
+            reverse("about"),
+            reverse("contact"),
+        ]
+        url_entries = []
+        for path in static_paths:
+            loc = xml_escape(request.build_absolute_uri(path))
+            url_entries.append(f"  <url><loc>{loc}</loc><changefreq>weekly</changefreq></url>")
+
+        for prop in Property.objects.filter(status="available").only("id", "updated_at").order_by("-updated_at")[:250]:
+            loc = xml_escape(request.build_absolute_uri(reverse("property_detail", kwargs={"id": prop.id})))
+            lastmod = prop.updated_at.strftime("%Y-%m-%d")
+            url_entries.append(
+                f"  <url><loc>{loc}</loc><lastmod>{lastmod}</lastmod><changefreq>daily</changefreq></url>"
+            )
+
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            + "\n".join(url_entries)
+            + "\n</urlset>\n"
+        )
+        return HttpResponse(xml, content_type="application/xml; charset=utf-8")

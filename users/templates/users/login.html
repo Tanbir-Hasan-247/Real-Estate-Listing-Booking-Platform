@@ -9,7 +9,7 @@
       <div class="pn-stack-xs" style="text-align:center;">
         <p class="pn-kicker">Client &amp; Advisor Access</p>
         <h1 id="login-heading" class="pn-h1" style="margin:0;font-size:clamp(2.2rem, 4vw, 3.3rem);">Welcome back.</h1>
-        <p class="pn-muted">Sign in to explore PropNest — or click any demo role below to auto-fill credentials and tour every dashboard.</p>
+        <p class="pn-muted">Sign in to your account or select a demo role below to auto-fill.</p>
       </div>
 
       <section class="pn-card" style="padding:clamp(1.6rem, 4vw, 2.5rem);">
@@ -51,7 +51,7 @@
         {% if demo_accounts %}
           <div class="pn-demo-box pn-native-cursor">
             <fieldset class="pn-demo-fieldset">
-              <legend class="pn-demo-legend">Instant Demo Tour — Click to Auto-Fill</legend>
+              <legend class="pn-demo-legend">Instant Demo — Click to Auto-Fill</legend>
               <div class="pn-demo-grid">
                 {% for acc in demo_accounts %}
                   <button type="button"
@@ -59,30 +59,17 @@
                           data-demo-card
                           data-demo-username="{{ acc.username }}"
                           data-demo-password="{{ acc.password }}"
-                          data-demo-label="{{ acc.label }}"
+                          data-demo-label="{{ acc.short_role }}"
                           aria-pressed="false"
                           aria-describedby="demo-fill-status">
-                    <div class="pn-demo-card-head">
-                      <span class="pn-demo-role">{{ acc.short_role }}</span>
-                      <span class="pn-demo-pill" data-demo-pill>Fill →</span>
-                    </div>
-                    <div class="pn-demo-creds">
-                      <span class="pn-demo-cred-line">
-                        <span>ID</span>
-                        <span class="pn-demo-cred-val">{{ acc.username }}</span>
-                      </span>
-                      <span class="pn-demo-cred-line">
-                        <span>PW</span>
-                        <span class="pn-demo-cred-val">{{ acc.password }}</span>
-                      </span>
-                    </div>
-                    <p class="pn-demo-desc">{{ acc.summary }}</p>
+                    <span class="pn-demo-role">{{ acc.short_role }}</span>
+                    <span class="pn-demo-pill" data-demo-pill>Fill →</span>
                   </button>
                 {% endfor %}
               </div>
             </fieldset>
             <p id="demo-fill-status" class="pn-demo-status" role="status" aria-live="polite">
-              Click Admin, Agent, or Client above to populate the login form, then press Sign In.
+              Click a role above to populate the sign-in fields.
             </p>
           </div>
         {% endif %}
@@ -146,7 +133,7 @@
         });
 
         if (statusEl) {
-          statusEl.textContent = `${roleLabel} credentials filled (${username}). Click "Sign In to PropNest →" to explore.`;
+          statusEl.textContent = `${roleLabel} filled — ready to sign in.`;
           statusEl.classList.add('is-active');
         }
         if (submitBtn) submitBtn.classList.add('is-ready');

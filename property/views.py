@@ -5,16 +5,29 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Avg, Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView
 
 from users.demo_accounts import DEMO_PROTECTED_USERNAMES
 from users.forms import AdminCreateUserForm
 
-from .forms import PropertyForm, PropertyTypeForm, TourBookingForm
-from .models import ContactMessage, Property, PropertyImage, PropertyType, SavedProperty, TourBooking
+from .forms import PropertyForm, PropertyReviewForm, PropertyTypeForm, TourBookingForm
+from .models import (
+    AMENITY_CHOICES,
+    ContactMessage,
+    Notification,
+    Property,
+    PropertyImage,
+    PropertyReview,
+    PropertyType,
+    SavedProperty,
+    TourBooking,
+)
 
 User = get_user_model()
 
@@ -37,6 +50,16 @@ def _is_agent(user):
 
 def _can_manage_property(user, prop):
     return _is_admin(user) or (user.is_authenticated and prop.agent_id == user.id)
+
+
+def _safe_redirect(request, candidate_url, fallback_name, **fallback_kwargs):
+    if candidate_url and url_has_allowed_host_and_scheme(
+        candidate_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(candidate_url)
+    return redirect(fallback_name, **fallback_kwargs)
 
 
 @login_required
@@ -188,6 +211,11 @@ class AgentDashboardView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         context["tour_bookings"] = tour_bookings[:8]
         context["tour_bookings_count"] = tour_bookings.filter(status="Pending").count()
         context["saved_leads_count"] = SavedProperty.objects.filter(property__agent=self.request.user).count()
+        review_stats = PropertyReview.objects.filter(property__agent=self.request.user).aggregate(
+            avg=Avg("rating"), total=Count("id")
+        )
+        context["agent_avg_rating"] = round(float(review_stats["avg"]), 1) if review_stats["avg"] else None
+        context["agent_reviews_count"] = review_stats["total"] or 0
         context["current_filter"] = self.request.GET.get("filter", "all")
         return context
 
@@ -319,7 +347,7 @@ def UpdateTourStatusView(request, booking_id, new_status):
         else:
             messages.error(request, "Invalid status update.")
 
-    return redirect(next_url)
+    return _safe_redirect(request, next_url, fallback_url)
 
 
 @login_required
@@ -556,7 +584,7 @@ def AdminUpdateUserRoleView(request, pk):
     if request.method == "POST":
         target = get_object_or_404(User, pk=pk)
         if _guard_demo_account(request, target):
-            return redirect(request.META.get("HTTP_REFERER") or "admin_user_list")
+            return _safe_redirect(request, request.META.get("HTTP_REFERER"), "admin_user_list")
         new_role = request.POST.get("role")
         if new_role in {User.BUYER, User.AGENT, User.ADMIN}:
             if target.pk == request.user.pk and new_role != User.ADMIN:
@@ -565,7 +593,7 @@ def AdminUpdateUserRoleView(request, pk):
                 target.role = new_role
                 target.save(update_fields=["role"])
                 messages.success(request, f"Updated '{target.username}' role to {target.get_role_display()}.")
-    return redirect(request.META.get("HTTP_REFERER") or "admin_user_list")
+    return _safe_redirect(request, request.META.get("HTTP_REFERER"), "admin_user_list")
 
 
 @login_required
@@ -575,7 +603,7 @@ def AdminToggleUserActiveView(request, pk):
     if request.method == "POST":
         target = get_object_or_404(User, pk=pk)
         if _guard_demo_account(request, target):
-            return redirect(request.META.get("HTTP_REFERER") or "admin_user_list")
+            return _safe_redirect(request, request.META.get("HTTP_REFERER"), "admin_user_list")
         if target.pk == request.user.pk:
             messages.warning(request, "You cannot deactivate your own logged-in account.")
         else:
@@ -583,7 +611,7 @@ def AdminToggleUserActiveView(request, pk):
             target.save(update_fields=["is_active"])
             state = "activated" if target.is_active else "suspended"
             messages.success(request, f"Account '{target.username}' has been {state}.")
-    return redirect(request.META.get("HTTP_REFERER") or "admin_user_list")
+    return _safe_redirect(request, request.META.get("HTTP_REFERER"), "admin_user_list")
 
 
 @login_required
@@ -593,14 +621,14 @@ def AdminDeleteUserView(request, pk):
     if request.method == "POST":
         target = get_object_or_404(User, pk=pk)
         if _guard_demo_account(request, target):
-            return redirect(request.META.get("HTTP_REFERER") or "admin_user_list")
+            return _safe_redirect(request, request.META.get("HTTP_REFERER"), "admin_user_list")
         if target.pk == request.user.pk:
             messages.error(request, "You cannot delete your own active session account.")
         else:
             uname = target.username
             target.delete()
             messages.success(request, f"User '{uname}' permanently deleted.")
-    return redirect(request.META.get("HTTP_REFERER") or "admin_user_list")
+    return _safe_redirect(request, request.META.get("HTTP_REFERER"), "admin_user_list")
 
 
 @login_required
@@ -712,7 +740,7 @@ def AdminToggleInquiryView(request, pk):
             request,
             "Inquiry marked as resolved." if inquiry.is_resolved else "Inquiry reopened.",
         )
-    return redirect(request.META.get("HTTP_REFERER") or "admin_inquiries")
+    return _safe_redirect(request, request.META.get("HTTP_REFERER"), "admin_inquiries")
 
 
 @login_required
@@ -822,6 +850,17 @@ class PropertyDetailView(DetailView):
         city_key = (prop.city or "dhaka").strip().lower()
         fallback_lat, fallback_lng = CITY_COORDS.get(city_key, (23.7937, 90.4066))
 
+        reviews = list(prop.reviews.select_related("reviewer"))
+        review_count = len(reviews)
+        review_avg = round(sum(r.rating for r in reviews) / review_count, 1) if review_count else None
+        can_review = False
+        user_review = None
+        if self.request.user.is_authenticated and self.request.user != prop.agent:
+            can_review = TourBooking.objects.filter(
+                property=prop, buyer=self.request.user, status="Completed"
+            ).exists()
+            user_review = next((r for r in reviews if r.reviewer_id == self.request.user.id), None)
+
         context["images_list"] = images_list
         context["is_saved"] = is_saved
         context["user_booking"] = user_booking
@@ -830,6 +869,12 @@ class PropertyDetailView(DetailView):
         context["map_lat"] = float(prop.latitude) if prop.latitude is not None else fallback_lat
         context["map_lng"] = float(prop.longitude) if prop.longitude is not None else fallback_lng
         context["form"] = kwargs.get("form") or TourBookingForm()
+        context["reviews"] = reviews
+        context["review_count"] = review_count
+        context["review_avg"] = review_avg
+        context["can_review"] = can_review
+        context["user_review"] = user_review
+        context["review_form"] = kwargs.get("review_form") or PropertyReviewForm(instance=user_review)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -843,20 +888,83 @@ class PropertyDetailView(DetailView):
             messages.error(request, "You cannot book a viewing on your own property.")
             return redirect("property_detail", id=self.object.id)
 
+        if self.object.status != "available":
+            messages.error(
+                request,
+                f"This residence is currently marked '{self.object.get_status_display()}' and cannot accept new tour bookings.",
+            )
+            return redirect("property_detail", id=self.object.id)
+
+        if TourBooking.objects.filter(
+            property=self.object, buyer=request.user, status__in=["Pending", "Confirmed"]
+        ).exists():
+            messages.warning(
+                request,
+                "You already have an active Pending or Confirmed walkthrough for this residence.",
+            )
+            return redirect("property_detail", id=self.object.id)
+
         form = TourBookingForm(request.POST)
         if form.is_valid():
             booking = form.save(commit=False)
-            booking.property = self.object
-            booking.buyer = request.user
-            booking.save()
-            messages.success(request, "Private tour scheduled! The assigned advisor will confirm shortly.")
-            return redirect("property_detail", id=self.object.id)
+            if TourBooking.objects.filter(
+                property=self.object,
+                scheduled_date=booking.scheduled_date,
+                scheduled_time=booking.scheduled_time,
+                status="Confirmed",
+            ).exists():
+                form.add_error(
+                    "scheduled_time",
+                    "Another private tour is already confirmed for this exact date and time. Please choose a different slot.",
+                )
+            else:
+                booking.property = self.object
+                booking.buyer = request.user
+                booking.save()
+                messages.success(request, "Private tour scheduled! The assigned advisor will confirm shortly.")
+                return redirect("property_detail", id=self.object.id)
 
         messages.error(request, "Please fix the scheduling details below.")
         return self.render_to_response(self.get_context_data(form=form))
 
 
 @login_required
+@require_POST
+def SubmitPropertyReviewView(request, id):
+    prop = get_object_or_404(Property, id=id)
+    if request.user == prop.agent:
+        messages.error(request, "Property advisors cannot submit reviews for their own listings.")
+        return redirect("property_detail", id=prop.id)
+
+    has_completed_tour = TourBooking.objects.filter(
+        property=prop, buyer=request.user, status="Completed"
+    ).exists()
+    if not has_completed_tour:
+        messages.error(
+            request,
+            "Verified buyer reviews are unlocked after completing an on-site walkthrough.",
+        )
+        return redirect("property_detail", id=prop.id)
+
+    existing = PropertyReview.objects.filter(property=prop, reviewer=request.user).first()
+    form = PropertyReviewForm(request.POST, instance=existing)
+    if form.is_valid():
+        review = form.save(commit=False)
+        review.property = prop
+        review.reviewer = request.user
+        review.save()
+        messages.success(
+            request,
+            "Your verified buyer review has been updated." if existing else "Thank you — your verified review is now published.",
+        )
+        return redirect(f"{reverse('property_detail', kwargs={'id': prop.id})}#reviews")
+
+    messages.error(request, "Please select a star rating and provide your impressions.")
+    return redirect(f"{reverse('property_detail', kwargs={'id': prop.id})}#reviews")
+
+
+@login_required
+@require_POST
 def ToggleSavePropertyView(request, id):
     prop = get_object_or_404(Property, id=id)
     saved_item = SavedProperty.objects.filter(user=request.user, property=prop).first()
@@ -881,9 +989,7 @@ def ToggleSavePropertyView(request, id):
 
     messages.success(request, msg)
     fallback = request.POST.get("next") or request.META.get("HTTP_REFERER")
-    if fallback:
-        return redirect(fallback)
-    return redirect("property_detail", id=prop.id)
+    return _safe_redirect(request, fallback, "property_detail", id=prop.id)
 
 
 @login_required
@@ -899,3 +1005,101 @@ def SavedPropertiesView(request):
         item.property.first_image = imgs[0] if imgs else None
 
     return render(request, "saved_properties.html", {"saved_items": saved_items})
+
+
+def ComparePropertiesView(request):
+    raw_ids = request.GET.get("ids", "")
+    parsed_ids = []
+    for part in raw_ids.split(","):
+        cleaned = part.strip()
+        if cleaned.isdigit():
+            pid = int(cleaned)
+            if pid not in parsed_ids:
+                parsed_ids.append(pid)
+        if len(parsed_ids) >= 4:
+            break
+
+    base_qs = (
+        Property.objects.select_related("property_type", "agent")
+        .prefetch_related("images")
+        .annotate(avg_rating=Avg("reviews__rating"), reviews_total=Count("reviews", distinct=True))
+    )
+    if parsed_ids:
+        prop_map = {p.id: p for p in base_qs.filter(id__in=parsed_ids)}
+        properties = [prop_map[pid] for pid in parsed_ids if pid in prop_map]
+    else:
+        properties = list(base_qs.filter(status="available").order_by("-is_featured", "-created_at")[:3])
+
+    for prop in properties:
+        imgs = list(prop.images.all())
+        prop.first_image = imgs[0] if imgs else None
+        prop.price_per_sqft = round(float(prop.price) / prop.area_sqft, 2) if prop.area_sqft else None
+
+    saved_ids = set()
+    if request.user.is_authenticated:
+        saved_ids = set(
+            SavedProperty.objects.filter(user=request.user).values_list("property_id", flat=True)
+        )
+
+    amenity_rows = [
+        (code, label, [code in (p.amenities or []) for p in properties])
+        for code, label in AMENITY_CHOICES
+    ]
+
+    return render(
+        request,
+        "compare_properties.html",
+        {
+            "properties": properties,
+            "is_default_showcase": not bool(parsed_ids),
+            "saved_ids": saved_ids,
+            "amenity_rows": amenity_rows,
+        },
+    )
+
+
+@login_required
+def NotificationListView(request):
+    qs = Notification.objects.filter(recipient=request.user).select_related("actor")
+    paginator = Paginator(qs, 20)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    unread_count = qs.filter(is_read=False).count()
+    return render(
+        request,
+        "notifications.html",
+        {
+            "notifications": page_obj,
+            "page_obj": page_obj,
+            "unread_count": unread_count,
+        },
+    )
+
+
+@login_required
+@require_POST
+def MarkNotificationReadView(request, pk):
+    notif = get_object_or_404(Notification, pk=pk, recipient=request.user)
+    if not notif.is_read:
+        notif.is_read = True
+        notif.save(update_fields=["is_read"])
+
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse(
+            {
+                "ok": True,
+                "unread_count": Notification.objects.filter(recipient=request.user, is_read=False).count(),
+            }
+        )
+
+    follow_url = request.POST.get("next") or notif.link
+    return _safe_redirect(request, follow_url, "notifications")
+
+
+@login_required
+@require_POST
+def MarkAllNotificationsReadView(request):
+    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"ok": True, "unread_count": 0})
+    messages.success(request, "All notifications marked as read.")
+    return _safe_redirect(request, request.POST.get("next") or request.META.get("HTTP_REFERER"), "notifications")

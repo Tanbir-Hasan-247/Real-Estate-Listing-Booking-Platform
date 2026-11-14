@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Compare Residences Side-by-Side — PropNest Real Estate{% endblock %}
+
+{% block content %}
+<div class="pn-page">
+  <div class="pn-container pn-stack-lg">
+    <div class="pn-row-between" style="align-items:flex-end;">
+      <div>
+        <p class="pn-kicker">
+          {% if is_default_showcase %}Curated Comparison Matrix (Featured Selection){% else %}Custom Comparison Selection ({{ properties|length }} Residences){% endif %}
+        </p>
+        <h1 id="compare-heading" class="pn-h1" style="margin:0.4rem 0 0;">Side-by-Side Comparison</h1>
+      </div>
+      <div class="pn-row" style="gap:0.65rem;flex-wrap:wrap;">
+        <button type="button" id="pn-sync-compare-url" class="pn-btn pn-btn-sm">Load My Tray Selection</button>
+        <a href="{% url 'property_list' %}" class="pn-btn pn-btn-primary pn-btn-sm">Browse More Residences →</a>
+      </div>
+    </div>
+
+    {% if properties %}
+      <div class="pn-table-wrap pn-native-cursor" role="region" aria-labelledby="compare-heading" tabindex="0">
+        <table class="pn-table pn-compare-table">
+          <thead>
+            <tr>
+              <th scope="col">Specification</th>
+              {% for prop in properties %}
+                <th scope="col" style="min-width:215px;">
+                  <div class="pn-stack-xs" style="align-items:flex-start;">
+                    <a href="{% url 'property_detail' prop.id %}" style="display:block;width:100%;">
+                      {% if prop.first_image %}
+                        <img src="{{ prop.first_image.safe_url }}" alt="{{ prop.title }}" style="width:100%;height:125px;object-fit:cover;border-radius:10px;">
+                      {% else %}
+                        <img src="{{ prop.primary_image_url }}" alt="{{ prop.title }}" style="width:100%;height:125px;object-fit:cover;border-radius:10px;">
+                      {% endif %}
+                    </a>
+                    <a href="{% url 'property_detail' prop.id %}" class="no-underline text-[var(--g2-sand)] hover:text-[var(--g2-gold)]" style="font-size:0.94rem;font-weight:600;line-height:1.3;">
+                      {{ prop.title }}
+                    </a>
+                    <span class="pn-muted" style="font-size:0.75rem;">{{ prop.location }}, {{ prop.city }}</span>
+                  </div>
+                </th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Asking Price</th>
+              {% for prop in properties %}
+                <td>
+                  <strong class="g2-display" style="font-size:1.3rem;color:var(--g2-gold);font-variant-numeric:tabular-nums;">
+                    ${{ prop.price|floatformat:0 }}{% if prop.listing_type == 'rent' %}/mo{% endif %}
+                  </strong>
+                </td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <th scope="row">Valuation / Sq Ft</th>
+              {% for prop in properties %}
+                <td>{% if prop.price_per_sqft %}${{ prop.price_per_sqft|floatformat:0 }} / sqft{% else %}—{% endif %}</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <th scope="row">Listing Mode &amp; Status</th>
+              {% for prop in properties %}
+                <td>
+                  <span class="pn-badge pn-badge-ember">{{ prop.get_listing_type_display }}</span>
+                  <span class="pn-badge {% if prop.status == 'available' %}pn-badge-available{% else %}pn-badge-sold{% endif %}">{{ prop.get_status_display }}</span>
+                </td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <th scope="row">Architectural Type</th>
+              {% for prop in properties %}
+                <td>{{ prop.property_type.name|default:"Residence" }}</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <th scope="row">Bedrooms / Baths</th>
+              {% for prop in properties %}
+                <td>{{ prop.bedrooms|default:"Studio" }} Beds · {{ prop.bathrooms|default:"—" }} Baths</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <th scope="row">Floorplate Area</th>
+              {% for prop in properties %}
+                <td>{{ prop.area_sqft }} sqft</td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <th scope="row">Verified Rating</th>
+              {% for prop in properties %}
+                <td>
+                  {% if prop.average_rating %}
+                    <span style="color:var(--g2-gold);font-weight:600;">★ {{ prop.average_rating }} / 5</span>
+                    <span class="pn-muted" style="font-size:0.74rem;">({{ prop.review_count }})</span>
+                  {% else %}
+                    <span class="pn-muted">No reviews yet</span>
+                  {% endif %}
+                </td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <th scope="row">Lead Advisor</th>
+              {% for prop in properties %}
+                <td>
+                  <a href="{% url 'properties_by_agent' prop.agent.id %}" class="text-[var(--g2-sand)] hover:text-[var(--g2-gold)] no-underline">
+                    {{ prop.agent.get_full_name|default:prop.agent.username }}
+                  </a>
+                </td>
+              {% endfor %}
+            </tr>
+            {% for code, label, flags in amenity_rows %}
+              <tr>
+                <th scope="row">{{ label }}</th>
+                {% for has_item in flags %}
+                  <td>
+                    {% if has_item %}
+                      <span style="color:var(--pn-success);font-weight:600;">✓ Included</span>
+                    {% else %}
+                      <span class="pn-muted">—</span>
+                    {% endif %}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+            <tr>
+              <th scope="row">Action</th>
+              {% for prop in properties %}
+                <td>
+                  <a href="{% url 'property_detail' prop.id %}" class="pn-btn pn-btn-primary pn-btn-sm">Inspect &amp; Book →</a>
+                </td>
+              {% endfor %}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="pn-empty-state pn-stack-md" style="align-items:center;">
+        <p class="pn-kicker">Empty Comparison</p>
+        <h2 class="pn-h2" style="margin:0;">Select up to 4 residences to compare specs side by side.</h2>
+        <a href="{% url 'property_list' %}" class="pn-btn pn-btn-primary">Explore Residences →</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (() => {
+    const syncBtn = document.getElementById('pn-sync-compare-url');
+    syncBtn?.addEventListener('click', () => {
+      try {
+        const items = JSON.parse(localStorage.getItem('pnCompareIds') || '[]');
+        if (Array.isArray(items) && items.length) {
+          window.location.href = `{% url 'compare_properties' %}?ids=${items.map(i => i.id).join(',')}`;
+          return;
+        }
+      } catch (_) {}
+      window.location.href = `{% url 'property_list' %}`;
+    });
+  })();
+</script>
+{% endblock %}
