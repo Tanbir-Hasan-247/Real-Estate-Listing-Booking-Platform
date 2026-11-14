@@ -29,8 +29,6 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
   }
   const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
 
-  const cursorRing = g2.querySelector('[data-g2-cursor="ring"]');
-  const cursorDot = g2.querySelector('[data-g2-cursor="dot"]');
   const header = g2.querySelector('header');
   const menuDialog = document.getElementById('g2-main-menu');
 
@@ -47,74 +45,29 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
   const ctaSection = g2.querySelector('[data-g2-section="cta"]');
   const footerSection = g2.querySelector('[data-g2-section="footer"]');
 
-  [marqueeSection, ctaSection, footerSection].forEach(el => {
+  [ctaSection, footerSection].forEach(el => {
     if (el) el.classList.remove('g2-offscreen');
   });
+
+  // Pause CSS keyframes on marquee / spin elements while scrolled offscreen
+  const marqueeContainers = Array.from(g2.querySelectorAll('[data-g2-section="marquee"], .g2-clients'));
+  if ('IntersectionObserver' in window && marqueeContainers.length) {
+    const offscreenObserver = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          entry.target.classList.toggle('g2-offscreen', !entry.isIntersecting);
+        });
+      },
+      { rootMargin: '120px 0px' }
+    );
+    marqueeContainers.forEach(el => offscreenObserver.observe(el));
+  } else {
+    marqueeContainers.forEach(el => el.classList.remove('g2-offscreen'));
+  }
 
   const clamp01 = v => Math.min(1, Math.max(0, v));
   const range01 = (v, a, b) => clamp01((v - a) / (b - a));
   const easeInOutQuad = t => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
-
-  // =========================================================================
-  // 1. CUSTOM CURSOR (RING + DOT)
-  // =========================================================================
-  if (window.matchMedia('(pointer: fine)').matches && cursorRing && cursorDot) {
-    let mouseX = -100;
-    let mouseY = -100;
-    let ringX = -100;
-    let ringY = -100;
-    let cursorVisible = false;
-    let lastTarget = null;
-
-    window.addEventListener('mousemove', e => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      if (!cursorVisible) {
-        ringX = mouseX;
-        ringY = mouseY;
-        cursorVisible = true;
-        cursorRing.style.opacity = '1';
-        cursorDot.style.opacity = '1';
-      }
-      cursorDot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
-
-      if (e.target && e.target !== lastTarget) {
-        lastTarget = e.target;
-        const hideCustom = getComputedStyle(e.target).cursor !== 'none';
-        cursorRing.style.visibility = hideCustom ? 'hidden' : 'visible';
-        cursorDot.style.visibility = hideCustom ? 'hidden' : 'visible';
-        const onInteractive = Boolean(
-          e.target.closest?.("a, button, [role='button'], input, select, textarea, label, summary")
-        );
-        cursorRing.style.width = onInteractive ? '64px' : '40px';
-        cursorRing.style.height = onInteractive ? '64px' : '40px';
-        cursorRing.style.backgroundColor = onInteractive
-          ? 'color-mix(in srgb, var(--g2-gold) 12%, transparent)'
-          : 'transparent';
-      }
-    }, { passive: true });
-
-    document.addEventListener('mouseleave', () => {
-      cursorRing.style.opacity = '0';
-      cursorDot.style.opacity = '0';
-    });
-    document.addEventListener('mouseenter', () => {
-      if (cursorVisible) {
-        cursorRing.style.opacity = '1';
-        cursorDot.style.opacity = '1';
-      }
-    });
-
-    const tickCursor = () => {
-      if (cursorVisible) {
-        ringX += (mouseX - ringX) * 0.15;
-        ringY += (mouseY - ringY) * 0.15;
-        cursorRing.style.transform = `translate3d(${ringX.toFixed(2)}px, ${ringY.toFixed(2)}px, 0) translate(-50%, -50%)`;
-      }
-      requestAnimationFrame(tickCursor);
-    };
-    requestAnimationFrame(tickCursor);
-  }
 
   // =========================================================================
   // 2. HEADER BLUR, DARK/LIGHT THEME TOGGLE & MENU DRAWER
@@ -125,6 +78,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
   let towerController = null;
   let menuController = null;
+  let menuInitStarted = false;
 
   const THEME_STORAGE_KEY = 'propnest-theme';
   const colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
@@ -221,11 +175,24 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
       menuSubmenu.classList.add('hidden');
     }
     if (!menuDialog.hasAttribute('inert') && !open) menuDialog.setAttribute('inert', '');
-    if (open) menuDialog.removeAttribute('inert');
+    if (open) {
+      menuDialog.removeAttribute('inert');
+      if (!menuController && typeof ensureMenuController === 'function') {
+        ensureMenuController();
+      }
+    }
     if (menuController) menuController.setOpen(open);
   }
 
-  if (menuBtn) menuBtn.addEventListener('click', () => setMenuOpen(!menuOpen));
+  if (menuBtn) {
+    menuBtn.addEventListener('pointerenter', () => {
+      if (!menuController && typeof ensureMenuController === 'function') ensureMenuController();
+    }, { once: true, passive: true });
+    menuBtn.addEventListener('focus', () => {
+      if (!menuController && typeof ensureMenuController === 'function') ensureMenuController();
+    }, { once: true });
+    menuBtn.addEventListener('click', () => setMenuOpen(!menuOpen));
+  }
   if (menuAboutBtn && menuPrimary && menuSubmenu) {
     menuAboutBtn.addEventListener('click', () => {
       menuPrimary.classList.add('hidden');
@@ -296,8 +263,12 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     const dwellBar = heroSection.querySelector('.g2-dwell');
     const counterSpan = heroSection.querySelector('span.tabular-nums');
 
+    let heroMaxScroll = 1;
+    let heroInView = true;
+
     function fitHeroWords() {
       const w = heroSection.clientWidth || window.innerWidth;
+      heroMaxScroll = Math.max(1, heroSection.offsetHeight - window.innerHeight);
       heroSection.style.setProperty('--g2-hero-w', `${w}px`);
       sheets.forEach(sheet => {
         const wordP = sheet.querySelector('p.g2-display.text-transparent');
@@ -362,16 +333,34 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
         void dwellBar.offsetWidth;
         dwellBar.style.animation = '';
         dwellBar.style.animationDuration = '5200ms';
-        dwellBar.style.animationPlayState = heroPaused ? 'paused' : 'running';
+        dwellBar.style.animationPlayState = (!heroPaused && heroInView && document.visibilityState === 'visible') ? 'running' : 'paused';
       }
 
       scheduleHeroNext();
     }
 
     function scheduleHeroNext() {
-      if (heroTimer) clearTimeout(heroTimer);
-      if (!heroPaused) heroTimer = setTimeout(() => renderHeroSlide(heroSlideIdx + 1), 5200);
+      if (heroTimer) {
+        clearTimeout(heroTimer);
+        heroTimer = null;
+      }
+      const canRun = !heroPaused && heroInView && document.visibilityState === 'visible';
+      if (dwellBar) dwellBar.style.animationPlayState = canRun ? 'running' : 'paused';
+      if (canRun) {
+        heroTimer = setTimeout(() => renderHeroSlide(heroSlideIdx + 1), 5200);
+      }
     }
+
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(
+        ([entry]) => {
+          heroInView = entry.isIntersecting;
+          scheduleHeroNext();
+        },
+        { rootMargin: '60px 0px' }
+      ).observe(heroSection);
+    }
+    document.addEventListener('visibilitychange', scheduleHeroNext);
 
     if (prevBtn) prevBtn.addEventListener('click', () => renderHeroSlide(heroSlideIdx - 1));
     if (nextBtn) nextBtn.addEventListener('click', () => renderHeroSlide(heroSlideIdx + 1));
@@ -380,7 +369,6 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
       pauseBtn.addEventListener('click', () => {
         heroPaused = !heroPaused;
         pauseBtn.setAttribute('aria-pressed', heroPaused ? 'true' : 'false');
-        if (dwellBar) dwellBar.style.animationPlayState = heroPaused ? 'paused' : 'running';
         scheduleHeroNext();
       });
     }
@@ -394,8 +382,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
     window.__updateHeroScroll = function (scrollY) {
       if (!stickyWrap) return;
-      const maxScroll = Math.max(1, heroSection.offsetHeight - window.innerHeight);
-      const e = clamp01(scrollY / maxScroll);
+      const e = clamp01(scrollY / heroMaxScroll);
       stickyWrap.style.setProperty('--g2-e', e.toFixed(4));
       stickyWrap.style.setProperty('--g2-hero-y', `${(-16 * e).toFixed(2)}px`);
     };
@@ -405,18 +392,20 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
   // 4. GIANT DISPLAY HEADINGS: CONTAINER FIT & 3D LETTER FLIP
   // =========================================================================
   const displayHeadings = Array.from(document.querySelectorAll('div[style*="container-type:inline-size"] > h2.g2-display'));
+  const displayHeadingStates = displayHeadings.map(h2 => {
+    const spans = Array.from(h2.children).filter(el => !el.classList.contains('sr-only'));
+    const measureWrap = spans[0] ? spans[0].firstElementChild : null;
+    const visibleWrap = spans[1] || null;
+    const letters = visibleWrap ? Array.from(visibleWrap.querySelectorAll('span[style*="perspective"] > span')) : [];
+    return { h2, measureWrap, visibleWrap, letters, lastP: -1 };
+  });
 
   function fitDisplayHeadings() {
-    displayHeadings.forEach(h2 => {
+    displayHeadingStates.forEach(({ h2, measureWrap, visibleWrap }) => {
       const container = h2.parentElement;
-      if (!container) return;
+      if (!container || !visibleWrap) return;
       const cw = container.clientWidth;
       if (cw <= 0) return;
-
-      const spans = Array.from(h2.children).filter(el => !el.classList.contains('sr-only'));
-      const measureWrap = spans[0] ? spans[0].firstElementChild : null;
-      const visibleWrap = spans[1];
-      if (!visibleWrap) return;
 
       const targetEl = measureWrap || visibleWrap;
       const prevFs = targetEl.style.fontSize;
@@ -457,41 +446,84 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     let isDragging = false;
     let dragStartX = 0;
     let dragInitialX = 0;
+    let railHalfWidth = railTrack ? railTrack.scrollWidth / 2 : 0;
+    let railInView = false;
+    let railRafId = 0;
 
     if (railTrack) {
-      function stepRail() {
-        const halfWidth = railTrack.scrollWidth / 2;
+      if ('ResizeObserver' in window) {
+        new ResizeObserver(() => {
+          railHalfWidth = railTrack.scrollWidth / 2;
+        }).observe(railTrack);
+      }
+
+      const canRailTick = () =>
+        railInView &&
+        document.visibilityState === 'visible' &&
+        (!railPaused || isDragging || Math.abs(railTargetOffset) > 0.5);
+
+      const stepRail = () => {
+        railRafId = 0;
+        if (!canRailTick()) return;
         if (!railPaused && !isDragging) railX -= 0.55;
         if (Math.abs(railTargetOffset) > 0.5) {
           const delta = railTargetOffset * 0.12;
           railX += delta;
           railTargetOffset -= delta;
         }
-        if (halfWidth > 0) {
-          if (railX <= -halfWidth) railX += halfWidth;
-          if (railX > 0) railX -= halfWidth;
+        if (railHalfWidth > 0) {
+          if (railX <= -railHalfWidth) railX += railHalfWidth;
+          if (railX > 0) railX -= railHalfWidth;
         }
-        railTrack.style.transform = `translateX(${railX.toFixed(2)}px)`;
-        requestAnimationFrame(stepRail);
+        railTrack.style.transform = `translate3d(${railX.toFixed(1)}px, 0, 0)`;
+        railRafId = requestAnimationFrame(stepRail);
+      };
+
+      const ensureRailTick = () => {
+        if (!railRafId && canRailTick()) {
+          railRafId = requestAnimationFrame(stepRail);
+        } else if (railRafId && !canRailTick()) {
+          cancelAnimationFrame(railRafId);
+          railRafId = 0;
+        }
+      };
+
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(
+          ([entry]) => {
+            railInView = entry.isIntersecting;
+            ensureRailTick();
+          },
+          { rootMargin: '120px 0px' }
+        ).observe(portfolioSection);
+      } else {
+        railInView = true;
+        ensureRailTick();
       }
-      requestAnimationFrame(stepRail);
+      document.addEventListener('visibilitychange', ensureRailTick);
+
+      // Apply initial resting transform cleanly without spinning while offscreen
+      railTrack.style.transform = `translate3d(${railX}px, 0, 0)`;
 
       if (pauseRailBtn) {
         pauseRailBtn.addEventListener('click', () => {
           railPaused = !railPaused;
           pauseRailBtn.setAttribute('aria-pressed', railPaused ? 'true' : 'false');
+          ensureRailTick();
         });
       }
       if (prevRailBtn) {
         prevRailBtn.addEventListener('click', () => {
           const card = railTrack.querySelector('a');
           railTargetOffset += card ? card.clientWidth + 24 : 360;
+          ensureRailTick();
         });
       }
       if (nextRailBtn) {
         nextRailBtn.addEventListener('click', () => {
           const card = railTrack.querySelector('a');
           railTargetOffset -= card ? card.clientWidth + 24 : 360;
+          ensureRailTick();
         });
       }
       if (railContainer) {
@@ -499,12 +531,16 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
           isDragging = true;
           dragStartX = e.clientX;
           dragInitialX = railX;
+          ensureRailTick();
         });
         window.addEventListener('pointermove', e => {
           if (isDragging) railX = dragInitialX + (e.clientX - dragStartX);
         }, { passive: true });
         window.addEventListener('pointerup', () => {
-          isDragging = false;
+          if (isDragging) {
+            isDragging = false;
+            ensureRailTick();
+          }
         });
       }
     }
@@ -645,6 +681,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
   uniform float uLightMode;
   // 1 = a whole ring, brightest at one point (the menu); 0 = the comet (the home tower)
   uniform float uFull;
+  uniform float uBoost;
 
   varying vec2 vUv;
 
@@ -692,7 +729,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     float around = 0.5 + 0.5 * cos((vUv.x - 0.5) * 6.2831853);
     cometMask = mix(cometMask, 0.45 + 0.55 * around * around, uFull);
 
-    color.rgb *= 1.5;
+    color.rgb *= 1.5 * uBoost;
 
     float lum = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
     float maxColor = max(color.r, max(color.g, color.b));
@@ -705,7 +742,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
   }
 `;
 
-  function createRingNoiseTexture(size = 256) {
+  function createRingNoiseTexture(size = 128) {
     const c = document.createElement('canvas');
     c.width = c.height = size;
     const ctx = c.getContext('2d');
@@ -736,7 +773,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     return tex;
   }
 
-  function createCometRingMaterial({ noiseTex, isLight = false, full = 0, alpha = 0 }) {
+  function createCometRingMaterial({ noiseTex, isLight = false, full = 0, alpha = 0, boost = 1 }) {
     return new THREE.ShaderMaterial({
       side: THREE.DoubleSide,
       transparent: true,
@@ -750,7 +787,8 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
         uProgress: { value: 1 },
         uAlpha: { value: alpha },
         uLightMode: { value: +isLight },
-        uFull: { value: full }
+        uFull: { value: full },
+        uBoost: { value: boost }
       },
       vertexShader: RING_VERTEX_SHADER,
       fragmentShader: RING_FRAGMENT_SHADER
@@ -970,10 +1008,19 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     };
     updateBackdropGradient();
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: true,
+      powerPreference: 'high-performance',
+      stencil: false
+    });
     renderer.setClearColor(0, 0);
     renderer.debug.checkShaderErrors = false;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    const baseDpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    let renderScale = 1.0;
+    let useComposer = !prefersReducedMotion;
+    renderer.setPixelRatio(Math.min(baseDpr, 1.25));
     renderer.toneMapping = THREE.NeutralToneMapping;
     renderer.toneMappingExposure = 1;
 
@@ -986,12 +1033,9 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 2000);
     camera.position.set(0, 45, 230);
 
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    const envScene = new THREE.Scene();
-
     const composerTarget = new THREE.WebGLRenderTarget(1, 1, {
       type: THREE.HalfFloatType,
-      samples: window.innerWidth < 768 ? 0 : 4
+      samples: 0
     });
     const composer = new EffectComposer(renderer, composerTarget);
     composer.addPass(new RenderPass(scene, camera));
@@ -1039,28 +1083,21 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     const gradePass = new ShaderPass(gradeShader);
     composer.addPass(gradePass);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, isLight() ? 0.9 : 0.95);
-    scene.add(ambientLight);
+    // Consolidated 4-light architectural rig (sky/ground hemi + warm key + cool rim + ember lobby)
+    const hemiLight = new THREE.HemisphereLight(0xeef4ff, 0xffd8b0, isLight() ? 1.15 : 1.25);
+    scene.add(hemiLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffe2c4, 1.9);
+    const keyLight = new THREE.DirectionalLight(0xffe2c4, 2.05);
     keyLight.position.set(50, 100, 50);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xdfe9ff, isLight() ? 0.8 : 1);
-    fillLight.position.set(0, 50, 100);
-    scene.add(fillLight);
-
-    const lobbyLight = new THREE.PointLight(0xff6524, 0.9, 150);
+    const lobbyLight = new THREE.PointLight(0xff6524, 0.95, 150);
     lobbyLight.position.set(0, -20, 20);
     scene.add(lobbyLight);
 
     const rimLeft = new THREE.DirectionalLight(0x9fc4ff, 1.5);
     rimLeft.position.set(-120, 60, -160);
     scene.add(rimLeft);
-
-    const rimRight = new THREE.DirectionalLight(0xffc890, 1.1);
-    rimRight.position.set(140, 40, -120);
-    scene.add(rimRight);
 
     const rootGroup = new THREE.Group();
     rootGroup.position.y = -80;
@@ -1077,11 +1114,23 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     };
 
     let loadedModel = null;
+    let assetsStarted = false;
+    let warmupFramesLeft = 10;
+    let perfAccumMs = 0;
+    let perfSamples = 0;
+    let perfTier = 0;
+    canvas.dataset.pnRenderTier = '0';
 
-    // Ring (same shader 83249 with uFull = 0)
-    const noiseTex = createRingNoiseTexture();
-    const ringMat = createCometRingMaterial({ noiseTex, isLight: isLight(), full: 0, alpha: 0 });
-    const ringGeo = new THREE.CylinderGeometry(85, 48, 0, 256, 1, true);
+    // Ring (single lightweight 128-seg spiral ribbon; direct-mode luminosity handled in shader via uBoost)
+    const noiseTex = createRingNoiseTexture(128);
+    const ringMat = createCometRingMaterial({
+      noiseTex,
+      isLight: isLight(),
+      full: 0,
+      alpha: 0,
+      boost: useComposer ? 1 : (isLight() ? 1.15 : 1.32)
+    });
+    const ringGeo = new THREE.CylinderGeometry(85, 48, 0, 128, 1, true);
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
     ringMesh.position.set(0, 4.5, 0);
     ringMesh.renderOrder = 1;
@@ -1091,138 +1140,287 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     ringPivot.add(ringMesh);
     rootGroup.add(ringPivot);
 
-    // Load HDR Environment + Meshopt GLB asynchronously
+    // Deferred HDR Environment + Meshopt GLB load (avoids competing with initial Hero paint)
     const hdrUrl = PN_CFG.towerHdrUrl || '/static/assets/golpo-aleya-evening-sky.hdr';
     const glbUrl = PN_CFG.towerGlbUrl || '/static/assets/golpo-aleya-building-coloured.glb';
 
-    const hdrPromise = new HDRLoader()
-      .loadAsync(hdrUrl)
-      .then(hdr => {
-        hdr.wrapS = THREE.RepeatWrapping;
-        hdr.repeat.x = -1;
-        const skyMat = new THREE.MeshBasicMaterial({
-          map: hdr,
-          side: THREE.BackSide,
-          depthWrite: false,
-          toneMapped: false
-        });
-        envScene.add(new THREE.Mesh(new THREE.SphereGeometry(400, 64, 32), skyMat));
-        scene.environmentIntensity = 0.3;
-        scene.environmentRotation.y = Math.PI;
-        scene.environment = pmremGenerator.fromScene(envScene, 0.02, 0.1, 1000).texture;
-      })
-      .catch(() => {
-        const skyFallback = new THREE.ShaderMaterial({
-          side: THREE.BackSide,
-          depthWrite: false,
-          vertexShader: `
-            varying vec3 vDir;
-            void main() {
-              vDir = normalize(position);
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }`,
-          fragmentShader: `
-            varying vec3 vDir;
-            void main() {
-              float y = vDir.y;
-              vec3 horizon = vec3(1.0, 0.6, 0.4) * 1.1;
-              vec3 c = y < 0.0
-                ? mix(horizon * 0.35, vec3(0.06, 0.055, 0.055), smoothstep(0.0, 0.25, -y))
-                : mix(mix(horizon, vec3(0.5, 0.64, 0.9), smoothstep(0.0, 0.07, y)), vec3(0.1, 0.2, 0.48), smoothstep(0.1, 0.9, y));
-              float sun = max(dot(normalize(vDir.xz + 1e-4), normalize(vec2(-0.6, -0.8))), 0.0);
-              c += vec3(1.0, 0.5, 0.25) * pow(sun, 6.0) * smoothstep(0.35, 0.0, abs(y)) * 0.8;
-              gl_FragColor = vec4(c, 1.0);
-            }`
-        });
-        envScene.add(new THREE.Mesh(new THREE.SphereGeometry(400, 64, 32), skyFallback));
-        scene.environment = pmremGenerator.fromScene(envScene, 0.02, 0.1, 1000).texture;
-      });
+    function bakeEnvironment(skyMat) {
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      const envScene = new THREE.Scene();
+      const skyGeo = new THREE.SphereGeometry(400, 48, 24);
+      const skyMesh = new THREE.Mesh(skyGeo, skyMat);
+      envScene.add(skyMesh);
+      scene.environment = pmremGenerator.fromScene(envScene, 0.02, 0.1, 1000).texture;
+      envScene.clear();
+      skyGeo.dispose();
+      skyMat.dispose();
+      pmremGenerator.dispose();
+    }
 
-    (async () => {
-      try {
-        await MeshoptDecoder.ready;
-        const [gltf] = await Promise.all([
-          new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(glbUrl),
-          hdrPromise
-        ]);
-        const model = gltf.scene;
-        const fit = fitBuilding(model);
-        const s = Math.min(62 / (1.4 * fit.footprint), 150 / fit.height);
-        model.scale.setScalar(s);
-        model.position.set(-fit.centre.x * s, -fit.floor * s, -fit.centre.z * s);
-        model.userData.withPlot = fit.withPlot;
-        model.userData.towerWidth = fit.footprint * s;
-        model.userData.topY = fit.height * s;
+    function startTowerAssetsLoad() {
+      if (assetsStarted) return;
+      assetsStarted = true;
 
-        const withPlot = fit.withPlot;
-        model.traverse(obj => {
-          if (!obj.isMesh) return;
-          const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-          for (const mat of mats) {
-            if (!mat) continue;
-            mat.envMapIntensity = /glass/i.test(mat.name) ? 1.6 : 0.6;
-            if (mat.name === 'Glass_Facade') {
-              mat.envMapIntensity = 0.7;
-              mat.roughness = 0.22;
-              mat.metalness = 0.2;
-              mat.clearcoat = 0.3;
-              mat.color.setRGB(0.14, 0.32, 0.6);
-              mat.opacity = 0.36;
-            } else if (/^(Cladding_Charcoal|Frames_Bronze|Rails_Anthracite)/.test(mat.name)) {
-              mat.color.multiplyScalar(2.6);
-              mat.roughness = Math.max(mat.roughness, 0.55);
-              mat.metalness *= 0.6;
-            } else if (/^(Floors_Lit_Interior|Soffit_Timber_Lit|Material__8|Material__2)$/.test(mat.name)) {
-              mat.color.setRGB(0.95, 0.88, 0.76);
-              if (mat.emissive.getHex() !== 0) {
-                mat.emissive.setRGB(1, 0.85, 0.65);
-                mat.emissiveIntensity *= 0.9;
+      const hdrPromise = new HDRLoader()
+        .loadAsync(hdrUrl)
+        .then(hdr => {
+          hdr.wrapS = THREE.RepeatWrapping;
+          hdr.repeat.x = -1;
+          const skyMat = new THREE.MeshBasicMaterial({
+            map: hdr,
+            side: THREE.BackSide,
+            depthWrite: false,
+            toneMapped: false
+          });
+          scene.environmentIntensity = 0.3;
+          scene.environmentRotation.y = Math.PI;
+          bakeEnvironment(skyMat);
+          hdr.dispose();
+        })
+        .catch(() => {
+          const skyFallback = new THREE.ShaderMaterial({
+            side: THREE.BackSide,
+            depthWrite: false,
+            vertexShader: `
+              varying vec3 vDir;
+              void main() {
+                vDir = normalize(position);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }`,
+            fragmentShader: `
+              varying vec3 vDir;
+              void main() {
+                float y = vDir.y;
+                vec3 horizon = vec3(1.0, 0.6, 0.4) * 1.1;
+                vec3 c = y < 0.0
+                  ? mix(horizon * 0.35, vec3(0.06, 0.055, 0.055), smoothstep(0.0, 0.25, -y))
+                  : mix(mix(horizon, vec3(0.5, 0.64, 0.9), smoothstep(0.0, 0.07, y)), vec3(0.1, 0.2, 0.48), smoothstep(0.1, 0.9, y));
+                float sun = max(dot(normalize(vDir.xz + 1e-4), normalize(vec2(-0.6, -0.8))), 0.0);
+                c += vec3(1.0, 0.5, 0.25) * pow(sun, 6.0) * smoothstep(0.35, 0.0, abs(y)) * 0.8;
+                gl_FragColor = vec4(c, 1.0);
+              }`
+          });
+          bakeEnvironment(skyFallback);
+        });
+
+      const nextFrame = () => new Promise(r => requestAnimationFrame(r));
+
+      (async () => {
+        try {
+          await MeshoptDecoder.ready;
+          const [gltf] = await Promise.all([
+            new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(glbUrl),
+            hdrPromise
+          ]);
+          await nextFrame();
+          const model = gltf.scene;
+          const fit = fitBuilding(model);
+          const s = Math.min(62 / (1.4 * fit.footprint), 150 / fit.height);
+          model.scale.setScalar(s);
+          model.position.set(-fit.centre.x * s, -fit.floor * s, -fit.centre.z * s);
+          model.userData.withPlot = fit.withPlot;
+          model.userData.towerWidth = fit.footprint * s;
+          model.userData.topY = fit.height * s;
+          model.updateMatrixWorld(true);
+
+          const withPlot = fit.withPlot;
+          const plotSafeRadius = 0.75 * fit.footprint * s;
+          const matBounds = new Map();
+          const cornerVec = new THREE.Vector3();
+
+          // Measure per-material conservative local Y & XZ bounds so upper tower opaque
+          // materials retain full hardware Early-Z culling (no transparent / discard).
+          model.traverse(obj => {
+            if (!obj.isMesh || !obj.geometry) return;
+            if (!obj.geometry.boundingBox) obj.geometry.computeBoundingBox();
+            const bb = obj.geometry.boundingBox;
+            let localMinY = Infinity;
+            let localMaxXZ = 0;
+            for (let ix = 0; ix < 2; ix++) {
+              const cx = ix ? bb.max.x : bb.min.x;
+              for (let iy = 0; iy < 2; iy++) {
+                const cy = iy ? bb.max.y : bb.min.y;
+                for (let iz = 0; iz < 2; iz++) {
+                  const cz = iz ? bb.max.z : bb.min.z;
+                  cornerVec.set(cx, cy, cz).applyMatrix4(obj.matrixWorld);
+                  if (cornerVec.y < localMinY) localMinY = cornerVec.y;
+                  const rxz = Math.hypot(cornerVec.x, cornerVec.z);
+                  if (rxz > localMaxXZ) localMaxXZ = rxz;
+                }
               }
-            } else if (mat.name === 'Glass_Lobby_Lit' || mat.name === 'Chandelier_Light') {
-              mat.emissiveIntensity = 0;
+            }
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            for (const mat of mats) {
+              if (!mat) continue;
+              const prev = matBounds.get(mat);
+              if (!prev) {
+                matBounds.set(mat, { minY: localMinY, maxXZ: localMaxXZ });
+              } else {
+                if (localMinY < prev.minY) prev.minY = localMinY;
+                if (localMaxXZ > prev.maxXZ) prev.maxXZ = localMaxXZ;
+              }
+            }
+          });
+
+          const fadeExpr = withPlot
+            ? 'gl_FragColor.a *= (1.0 - smoothstep(uFadeNear, uFadeFar, length(vGroundXZ))) * smoothstep(uFadeBase + 0.40, uFadeBase + 1.40, vGroundY);'
+            : 'gl_FragColor.a *= smoothstep(0.0, 1.0, clamp((vGroundY - uFadeBase) / uFadeH, 0.0, 1.0));';
+
+          const configuredMats = new Set();
+          const matRemap = new Map();
+          const keepPbrRe = /^(Glass_|Frames_Bronze|Rails_Anthracite|Cladding_Charcoal|Bronze|Bola_Glass|Chandelier_Light)/i;
+          model.traverse(obj => {
+            if (!obj.isMesh) return;
+            if (obj.geometry && obj.geometry.index && obj.geometry.index.count > 150000) {
+              const oldIdx = obj.geometry.index;
+              const arr = oldIdx.array;
+              const triCount = (arr.length / 3) | 0;
+              const TypedArr = arr instanceof Uint32Array ? Uint32Array : Uint16Array;
+              const kept = new TypedArr(((triCount >> 1) + 6) * 3);
+              let w = 0;
+              for (let t = 0; t < triCount; t++) {
+                if (((t / 6) | 0) % 2 === 0) {
+                  const b = t * 3;
+                  kept[w++] = arr[b];
+                  kept[w++] = arr[b + 1];
+                  kept[w++] = arr[b + 2];
+                }
+              }
+              obj.geometry.setIndex(new THREE.BufferAttribute(kept.subarray(0, w), 1));
             }
 
-            const alreadyTransparent = mat.transparent || mat.opacity < 1;
-            mat.forceSinglePass = !alreadyTransparent;
-            mat.transparent = true;
+            const isArr = Array.isArray(obj.material);
+            const rawMats = isArr ? obj.material : [obj.material];
+            const finalMats = rawMats.map(origMat => {
+              if (!origMat) return origMat;
+              if (matRemap.has(origMat)) return matRemap.get(origMat);
 
-            const fadeExpr = withPlot
-              ? 'gl_FragColor.a *= (1.0 - smoothstep(uFadeNear, uFadeFar, length(vGroundXZ))) * smoothstep(uFadeBase + 0.40, uFadeBase + 1.40, vGroundY);'
-              : 'gl_FragColor.a *= smoothstep(0.0, 1.0, clamp((vGroundY - uFadeBase) / uFadeH, 0.0, 1.0));';
+              let activeMat = origMat;
+              if (!keepPbrRe.test(origMat.name || '')) {
+                activeMat = new THREE.MeshLambertMaterial({
+                  name: origMat.name,
+                  color: origMat.color ? origMat.color.clone() : new THREE.Color(0xffffff),
+                  map: origMat.map || null,
+                  emissive: origMat.emissive ? origMat.emissive.clone() : new THREE.Color(0x000000),
+                  emissiveMap: origMat.emissiveMap || null,
+                  emissiveIntensity: origMat.emissiveIntensity ?? 1,
+                  transparent: !!origMat.transparent,
+                  opacity: origMat.opacity ?? 1,
+                  alphaTest: origMat.alphaTest || 0,
+                  depthWrite: origMat.depthWrite !== false,
+                  side: origMat.side,
+                  vertexColors: !!origMat.vertexColors
+                });
+                origMat.dispose();
+              }
+              matRemap.set(origMat, activeMat);
 
-            mat.onBeforeCompile = shader => {
-              shader.uniforms.uFadeBase = fadeUniforms.base;
-              shader.uniforms.uFadeH = fadeUniforms.height;
-              shader.uniforms.uFadeNear = fadeUniforms.near;
-              shader.uniforms.uFadeFar = fadeUniforms.far;
-              shader.vertexShader = shader.vertexShader
-                .replace('void main() {', 'varying float vGroundY;\nvarying vec2 vGroundXZ;\nvoid main() {')
-                .replace(
-                  '#include <begin_vertex>',
-                  '#include <begin_vertex>\n  vec4 gWorld = modelMatrix * vec4(transformed, 1.0);\n  vGroundY = gWorld.y;\n  vGroundXZ = gWorld.xz;'
-                );
-              shader.fragmentShader = shader.fragmentShader
-                .replace(
-                  'void main() {',
-                  'varying float vGroundY;\nvarying vec2 vGroundXZ;\nuniform float uFadeBase;\nuniform float uFadeH;\nuniform float uFadeNear;\nuniform float uFadeFar;\nvoid main() {'
-                )
-                .replace(
-                  '#include <dithering_fragment>',
-                  `#include <dithering_fragment>\n  ${fadeExpr}\n  if (gl_FragColor.a < 0.1) discard;`
-                );
-            };
-            if (withPlot) mat.customProgramCacheKey = () => 'golpo-plot';
+              if (!configuredMats.has(activeMat)) {
+                configuredMats.add(activeMat);
+                const mat = activeMat;
+                if ('envMapIntensity' in mat) {
+                  mat.envMapIntensity = /glass/i.test(mat.name) ? 1.4 : 0.6;
+                }
+                if (mat.name === 'Glass_Facade') {
+                  mat.envMapIntensity = 0.85;
+                  mat.roughness = 0.18;
+                  mat.metalness = 0.25;
+                  if ('clearcoat' in mat) mat.clearcoat = 0;
+                  mat.color.setRGB(0.14, 0.32, 0.6);
+                  mat.opacity = 0.36;
+                } else if (/^(Cladding_Charcoal|Frames_Bronze|Rails_Anthracite)/.test(mat.name)) {
+                  mat.color.multiplyScalar(2.6);
+                  mat.roughness = Math.max(mat.roughness, 0.55);
+                  mat.metalness *= 0.6;
+                } else if (/^(Floors_Lit_Interior|Soffit_Timber_Lit|Material__8|Material__2)$/.test(mat.name)) {
+                  mat.color.setRGB(0.95, 0.88, 0.76);
+                  if (mat.emissive.getHex() !== 0) {
+                    mat.emissive.setRGB(1, 0.85, 0.65);
+                    mat.emissiveIntensity *= 0.9;
+                  }
+                } else if (mat.name === 'Glass_Lobby_Lit' || mat.name === 'Chandelier_Light') {
+                  mat.emissiveIntensity = 0;
+                }
+
+                const alreadyTransparent = mat.transparent || mat.opacity < 1;
+                const b = matBounds.get(origMat);
+                const skipFadeShader = withPlot && !alreadyTransparent && b && b.minY >= 2.15 && b.maxXZ <= plotSafeRadius;
+                if (skipFadeShader) {
+                  mat.transparent = false;
+                } else {
+                  mat.forceSinglePass = !alreadyTransparent;
+                  mat.transparent = true;
+                  mat.onBeforeCompile = shader => {
+                    shader.uniforms.uFadeBase = fadeUniforms.base;
+                    shader.uniforms.uFadeH = fadeUniforms.height;
+                    shader.uniforms.uFadeNear = fadeUniforms.near;
+                    shader.uniforms.uFadeFar = fadeUniforms.far;
+                    shader.vertexShader = shader.vertexShader
+                      .replace('void main() {', 'varying float vGroundY;\nvarying vec2 vGroundXZ;\nvoid main() {')
+                      .replace(
+                        '#include <begin_vertex>',
+                        '#include <begin_vertex>\n  vec4 gWorld = modelMatrix * vec4(transformed, 1.0);\n  vGroundY = gWorld.y;\n  vGroundXZ = gWorld.xz;'
+                      );
+                    shader.fragmentShader = shader.fragmentShader
+                      .replace(
+                        'void main() {',
+                        'varying float vGroundY;\nvarying vec2 vGroundXZ;\nuniform float uFadeBase;\nuniform float uFadeH;\nuniform float uFadeNear;\nuniform float uFadeFar;\nvoid main() {'
+                      )
+                      .replace(
+                        '#include <dithering_fragment>',
+                        `#include <dithering_fragment>\n  ${fadeExpr}\n  if (gl_FragColor.a < 0.1) discard;`
+                      );
+                  };
+                  if (withPlot) mat.customProgramCacheKey = () => (mat.isMeshLambertMaterial ? 'golpo-plot-l' : 'golpo-plot');
+                }
+              }
+              return activeMat;
+            });
+            obj.material = isArr ? finalMats : finalMats[0];
+          });
+
+          await nextFrame();
+          buildingSpinGroup.add(model);
+          if (typeof renderer.compileAsync === 'function') {
+            await renderer.compileAsync(scene, camera);
           }
-        });
+          loadedModel = model;
+          warmupFramesLeft = 10;
+          perfAccumMs = 0;
+          perfSamples = 0;
+          cachedTitleState = '';
+          cachedOffsetKey = '';
+          prevFrameMs = 0;
+        } catch (err) {
+          console.error('Tower 3D load error:', err);
+        }
+      })();
+    }
 
-        loadedModel = model;
-        buildingSpinGroup.add(model);
-        cachedTitleState = '';
-        cachedOffsetKey = '';
-      } catch (err) {
-        console.error('Tower 3D load error:', err);
+    if ('IntersectionObserver' in window) {
+      const preloadObs = new IntersectionObserver(
+        entries => {
+          if (entries[0]?.isIntersecting) {
+            startTowerAssetsLoad();
+            preloadObs.disconnect();
+          }
+        },
+        { rootMargin: '1400px 0px' }
+      );
+      preloadObs.observe(section);
+    }
+    const scheduleIdlePreload = () => {
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(() => startTowerAssetsLoad(), { timeout: 2200 });
+      } else {
+        setTimeout(startTowerAssetsLoad, 1400);
       }
-    })();
+    };
+    if (document.readyState === 'complete') {
+      scheduleIdlePreload();
+    } else {
+      window.addEventListener('load', scheduleIdlePreload, { once: true });
+    }
 
     let ptrX = 0;
     let ptrY = 0;
@@ -1239,15 +1437,51 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     let ringScale = 1.4;
     let lookLift = 52;
     let isMobileLayout = false;
+    let cachedCanvasW = 0;
+    let cachedCanvasH = 0;
+    let cachedContainerW = 0;
+    let cachedContainerH = 0;
+    let cachedTitleH = 0;
+    let cachedSpanW = 0;
+    let lastBackdropOpacity = '';
+    let lastProjCamZ = -1;
+    let mobileTitleY = -1;
+    let desktopOffsetY = 0;
+    let cachedOffsetKey = '';
+    let cachedTitleState = '';
+
+    function syncRendererSize() {
+      const w = cachedCanvasW || canvas.clientWidth;
+      const h = cachedCanvasH || canvas.clientHeight;
+      if (!w || !h) return;
+      const effectiveDpr = Math.max(0.65, Math.min(baseDpr, 1.25) * renderScale);
+      renderer.setPixelRatio(effectiveDpr);
+      renderer.setSize(w, h, false);
+      if (useComposer) {
+        composer.setSize(w, h);
+        bloomPass.setSize(
+          Math.max(64, Math.floor(w * effectiveDpr * 0.55)),
+          Math.max(64, Math.floor(h * effectiveDpr * 0.55))
+        );
+      }
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
 
     function handleResize() {
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
       if (!w || !h) return;
-      renderer.setSize(w, h, false);
-      composer.setSize(w, h);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
+      cachedCanvasW = w;
+      cachedCanvasH = h;
+      cachedContainerW = backdropContainer.clientWidth || w;
+      cachedContainerH = backdropContainer.clientHeight || h;
+      cachedTitleH = titleDiv ? titleDiv.offsetHeight : 0;
+      cachedTitleState = '';
+      cachedOffsetKey = '';
+      lastProjCamZ = -1;
+
+      syncRendererSize();
 
       isMobileLayout = window.innerWidth < 768;
       framingWidth = isMobileLayout ? 46 : 60;
@@ -1267,21 +1501,58 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     let prevProgress = null;
     let prevFrameMs = 0;
     let ringYaw = 0;
-    let mobileTitleY = -1;
-    let desktopOffsetY = 0;
-    let cachedOffsetKey = '';
-    let cachedTitleState = '';
 
     let inView = false;
     let tabVisible = document.visibilityState === 'visible';
     let rafId = 0;
 
+    function stepAdaptiveGovernor(frameDeltaMs) {
+      if (!loadedModel || frameDeltaMs <= 0 || frameDeltaMs > 250) return;
+      if (warmupFramesLeft > 0) {
+        warmupFramesLeft -= 1;
+        return;
+      }
+      perfAccumMs += frameDeltaMs;
+      perfSamples += 1;
+      if (perfSamples < 8) return;
+
+      const avgMs = perfAccumMs / perfSamples;
+      perfAccumMs = 0;
+      perfSamples = 0;
+
+      if (avgMs > 24 && perfTier < 3) {
+        if (perfTier === 0 && useComposer) {
+          perfTier = 1;
+          renderScale = 0.78;
+          canvas.dataset.pnRenderTier = '1';
+          syncRendererSize();
+        } else if (perfTier <= 1 && useComposer) {
+          perfTier = 2;
+          useComposer = false;
+          renderScale = 1.0;
+          ringMat.uniforms.uFull.value = 0.08;
+          ringMat.uniforms.uBoost.value = isLight() ? 1.15 : 1.32;
+          lobbyLight.intensity = 1.25;
+          canvas.dataset.pnRenderTier = '2';
+          syncRendererSize();
+        } else if (perfTier === 2) {
+          perfTier = 3;
+          renderScale = 0.65;
+          canvas.dataset.pnRenderTier = '3';
+          syncRendererSize();
+        }
+      }
+    }
+
     function renderTower() {
       rafId = requestAnimationFrame(renderTower);
       const now = performance.now();
-      const dt = prevFrameMs ? Math.min(0.1, (now - prevFrameMs) / 1000) : 1 / 60;
+      const rawDeltaMs = prevFrameMs ? (now - prevFrameMs) : 16.67;
+      const dt = Math.min(0.1, rawDeltaMs / 1000);
       prevFrameMs = now;
       elapsedTime += dt;
+
+      if (prevProgress !== null) stepAdaptiveGovernor(rawDeltaMs);
 
       const l = (smoothProgress += (targetProgress - smoothProgress) * (1 - Math.exp(-dt / 0.07)));
       const s = 1 - Math.pow(1 - range01(l, 0, 0.5), 2);
@@ -1290,33 +1561,82 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
       const u = easeInOutQuad(range01(l, 0, 0.06));
       const m = easeInOutQuad(range01(l, 0.86, 0.98));
 
-      const bottomRatio = backdropContainer.getBoundingClientRect().bottom / window.innerHeight;
-      backdropContainer.style.opacity = String(clamp01((bottomRatio - 0.55) / 0.42));
-
       ringMesh.rotation.x = 0.3;
       ringMesh.rotation.z = 0.06;
       if (prevProgress !== null) ringYaw += (c - prevProgress) * Math.PI * 8.5;
       prevProgress = c;
       ringMesh.rotation.y = ringYaw;
-      ringMesh.scale.setScalar(isMobileLayout ? ringScale : 0.8 * ringScale);
+      const rScale = isMobileLayout ? ringScale : 0.8 * ringScale;
+      ringMesh.scale.setScalar(rScale);
 
       const topY = (loadedModel?.userData?.topY ?? 105) * buildingSpinGroup.scale.y;
       ringPivot.position.y = THREE.MathUtils.lerp(topY - 18, 4, f);
 
       const hVal = THREE.MathUtils.lerp(-76, -45, s);
+      const cw = cachedContainerW;
+      const ch = cachedContainerH;
+
+      // Update DHANMONDI / city backdrop title fit once per layout/font change (zero scroll thrash)
+      if (titleDiv && titleSpan && cw && ch) {
+        const fontKey = `${cw}x${ch}x${document.fonts.status}`;
+        if (fontKey !== cachedTitleState) {
+          cachedTitleState = fontKey;
+          titleDiv.style.fontSize = '100px';
+          const spanW = titleSpan.offsetWidth;
+          if (spanW) {
+            cachedSpanW = spanW;
+            const targetW = cw >= 768 ? 0.86 * cw : cw - 48;
+            titleDiv.style.fontSize = `${((100 * targetW) / spanW).toFixed(1)}px`;
+            cachedTitleH = titleDiv.offsetHeight;
+            mobileTitleY = -1;
+            lastProjCamZ = -1;
+            if (cw >= 768) titleDiv.style.transform = 'translate3d(0, 84px, 0)';
+            titleDiv.style.visibility = cw >= 768 ? 'visible' : 'hidden';
+          }
+        }
+      }
+
+      const tanHalfFov = Math.tan((camera.fov * Math.PI) / 360);
+      const ringHalf = 85 * ringScale * 1.1;
+      const mobileFitZ = (105 * buildingSpinGroup.scale.y) / 0.62 / (2 * tanHalfFov);
+      const targetCamZ = isMobileLayout
+        ? Math.max(272, mobileFitZ, framingWidth / (tanHalfFov * camera.aspect))
+        : Math.max(272, Math.max(framingWidth, ringHalf) / (tanHalfFov * camera.aspect));
+      camera.position.z = targetCamZ;
+
+      if (titleDiv && titleSpan && cw < 768 && loadedModel && ch && (lastProjCamZ !== Math.round(targetCamZ) || mobileTitleY < 0)) {
+        lastProjCamZ = Math.round(targetCamZ);
+        const origY = rootGroup.position.y;
+        rootGroup.position.y = -45;
+        rootGroup.updateMatrixWorld(true);
+        tmpVec.set(0, loadedModel.userData.topY ?? 0, 0).applyMatrix4(buildingSpinGroup.matrixWorld);
+        rootGroup.position.y = origY;
+        const mlook = -27 + lookLift;
+        tmpCam.copy(camera);
+        tmpCam.position.set(0, mlook + 12, targetCamZ);
+        tmpCam.lookAt(0, mlook, 0);
+        tmpCam.updateMatrixWorld();
+        tmpVec.project(tmpCam);
+        const apexY = ((1 - tmpVec.y) / 2) * ch;
+        const mTop = Math.max(72, apexY - 0.12 * (cachedTitleH || titleSpan.offsetHeight));
+        if (Math.abs(mTop - mobileTitleY) >= 0.5) {
+          mobileTitleY = mTop;
+          titleDiv.style.transform = `translate3d(0, ${mTop.toFixed(1)}px, 0)`;
+          titleDiv.style.visibility = 'visible';
+        }
+      }
+
       const computedDrop = (() => {
-        if (!loadedModel || !titleDiv) return 0;
-        const cw = backdropContainer.clientWidth;
-        const ch = backdropContainer.clientHeight;
+        if (!loadedModel || !titleDiv || !ch || !cachedTitleH) return 0;
         const topRef = cw >= 768 ? 84 : mobileTitleY;
-        if (!ch || topRef < 0 || !titleDiv.offsetHeight) return 0;
-        const key = `${cw}x${ch}x${titleDiv.offsetHeight}x${topRef}x${Math.round(camera.position.z)}`;
+        if (topRef < 0) return 0;
+        const key = `${cw}x${ch}x${cachedTitleH}x${Math.round(topRef)}x${Math.round(targetCamZ)}`;
         if (key === cachedOffsetKey) return desktopOffsetY;
         cachedOffsetKey = key;
 
         const targetLook = -45.6 + lookLift;
         tmpCam.copy(camera);
-        tmpCam.position.set(0, targetLook + 12, camera.position.z);
+        tmpCam.position.set(0, targetLook + 12, targetCamZ);
         tmpCam.lookAt(0, targetLook, 0);
         tmpCam.updateMatrixWorld();
 
@@ -1331,7 +1651,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
         const slope = (projScreenY(-86) - y0) / 10;
         rootGroup.position.y = origY;
         rootGroup.updateMatrixWorld(true);
-        desktopOffsetY = Math.max(0, (topRef + titleDiv.offsetHeight + 24 - y0) / slope);
+        desktopOffsetY = Math.max(0, (topRef + cachedTitleH + 24 - y0) / slope);
         return desktopOffsetY;
       })();
 
@@ -1345,72 +1665,35 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
       buildingSpinGroup.rotation.y = -0.83 + c * Math.PI * 0.5;
       ringMat.uniforms.uTime.value = 0.5 * elapsedTime;
-      gradePass.uniforms.uTime.value = elapsedTime;
-      ringMat.uniforms.uAlpha.value = Math.max(0.55, u) * (1 - m);
+      const ringAlpha = Math.max(0.55, u) * (1 - m);
+      ringMat.uniforms.uAlpha.value = ringAlpha;
+      if (useComposer) {
+        gradePass.uniforms.uTime.value = elapsedTime;
+      }
 
       const lookY = 0.6 * hVal + lookLift;
       camera.position.x += (26 * ptrX - camera.position.x) * 0.05;
       camera.position.y += (lookY + 12 - 18 * ptrY - camera.position.y) * 0.05;
 
-      const tanHalfFov = Math.tan((camera.fov * Math.PI) / 360);
-      const ringHalf = 85 * ringScale * 1.1;
-      const mobileFitZ = (105 * buildingSpinGroup.scale.y) / 0.62 / (2 * tanHalfFov);
-      camera.position.z = isMobileLayout
-        ? Math.max(272, mobileFitZ, framingWidth / (tanHalfFov * camera.aspect))
-        : Math.max(272, Math.max(framingWidth, ringHalf) / (tanHalfFov * camera.aspect));
-
-      fog.density = baseFogDensity * (272 / camera.position.z);
+      fog.density = baseFogDensity * (272 / targetCamZ);
       camera.lookAt(0, lookY, 0);
 
-      // Update DHANMONDI title fit + position
-      if (titleDiv && titleSpan) {
-        const cw = backdropContainer.clientWidth;
-        const ch = backdropContainer.clientHeight;
-        const fontKey = `${cw}x${ch}x${document.fonts.status}`;
-        if (fontKey !== cachedTitleState && cw && ch) {
-          cachedTitleState = fontKey;
-          titleDiv.style.fontSize = '100px';
-          const spanW = titleSpan.offsetWidth;
-          if (spanW) {
-            const targetW = cw >= 768 ? 0.86 * cw : cw - 48;
-            titleDiv.style.fontSize = `${((100 * targetW) / spanW).toFixed(1)}px`;
-            mobileTitleY = -1;
-            if (cw >= 768) titleDiv.style.transform = 'translate3d(0, 84px, 0)';
-            titleDiv.style.visibility = cw >= 768 ? 'visible' : 'hidden';
-          }
-        }
-        if (cw < 768 && loadedModel) {
-          const origY = rootGroup.position.y;
-          rootGroup.position.y = -45;
-          rootGroup.updateMatrixWorld(true);
-          tmpVec.set(0, loadedModel.userData.topY ?? 0, 0).applyMatrix4(buildingSpinGroup.matrixWorld);
-          rootGroup.position.y = origY;
-          rootGroup.updateMatrixWorld(true);
-          const mlook = -27 + lookLift;
-          tmpCam.copy(camera);
-          tmpCam.position.set(0, mlook + 12, camera.position.z);
-          tmpCam.lookAt(0, mlook, 0);
-          tmpCam.updateMatrixWorld();
-          tmpVec.project(tmpCam);
-          const apexY = ((1 - tmpVec.y) / 2) * backdropContainer.clientHeight;
-          const mTop = Math.max(72, apexY - 0.12 * titleSpan.offsetHeight);
-          if (Math.abs(mTop - mobileTitleY) >= 0.5) {
-            mobileTitleY = mTop;
-            titleDiv.style.transform = `translate3d(0, ${mTop.toFixed(1)}px, 0)`;
-            titleDiv.style.visibility = 'visible';
-          }
-        }
+      if (useComposer) {
+        composer.render();
+      } else {
+        renderer.render(scene, camera);
       }
-
-      composer.render();
     }
 
     function syncActive() {
       const shouldRun = inView && tabVisible;
-      if (shouldRun && !rafId) {
-        prevFrameMs = 0;
-        renderTower();
-      } else if (!shouldRun && rafId) {
+      if (shouldRun) {
+        startTowerAssetsLoad();
+        if (!rafId) {
+          prevFrameMs = 0;
+          renderTower();
+        }
+      } else if (rafId) {
         cancelAnimationFrame(rafId);
         rafId = 0;
       }
@@ -1421,7 +1704,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
         inView = entry.isIntersecting;
         syncActive();
       },
-      { rootMargin: '50% 0px' }
+      { rootMargin: '80px 0px' }
     ).observe(section);
 
     document.addEventListener('visibilitychange', () => {
@@ -1433,6 +1716,13 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
       setProgress(p) {
         targetProgress = p;
       },
+      setBackdropOpacity(op) {
+        const nextStr = op >= 0.999 ? '1' : op <= 0.001 ? '0' : op.toFixed(3);
+        if (nextStr !== lastBackdropOpacity) {
+          lastBackdropOpacity = nextStr;
+          backdropContainer.style.opacity = nextStr;
+        }
+      },
       invalidateTitle() {
         cachedTitleState = '';
         cachedOffsetKey = '';
@@ -1443,12 +1733,12 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
         fogColor.setHex(isLight() ? 0xf3ece3 : 0x0d3a5e);
         fog.color.copy(fogColor);
         baseFogDensity = isLight() ? 0.0006 : 0.0012;
-        ambientLight.intensity = isLight() ? 0.9 : 0.95;
-        fillLight.intensity = isLight() ? 0.8 : 1;
+        hemiLight.intensity = isLight() ? 1.15 : 1.25;
         bloomPass.strength = isLight() ? 0.2 : 0.45;
         bloomPass.radius = isLight() ? 0.2 : 0.5;
         ringMat.blending = isLight() ? THREE.NormalBlending : THREE.AdditiveBlending;
         ringMat.uniforms.uLightMode.value = +isLight();
+        ringMat.uniforms.uBoost.value = useComposer ? 1 : (isLight() ? 1.15 : 1.32);
         ringMat.uniforms.uInnerColor.value.setHex(isLight() ? 0xe65c00 : 0xff9966);
         ringMat.uniforms.uOuterColor.value.setHex(isLight() ? 0x992600 : 0xff4d0d);
       }
@@ -1469,9 +1759,17 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
   // 9. MENU DRAWER 3D VISUAL (#g2-menu-canvas): EXACT 3953 + 83249
   // =========================================================================
   function initMenuThreeJS(canvas) {
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: true,
+      powerPreference: 'high-performance',
+      stencil: false
+    });
     renderer.setClearColor(0, 0);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.debug.checkShaderErrors = false;
+    const menuDpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    renderer.setPixelRatio(Math.min(menuDpr, 1.25));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
 
@@ -1506,7 +1804,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
         2.15,
         2.15,
         2.85,
-        48,
+        36,
         1,
         true,
         (idx * Math.PI * 2) / count - arcSpan / 2,
@@ -1538,8 +1836,8 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
       });
     });
 
-    const noiseTex = createRingNoiseTexture();
-    const ringGeo = new THREE.CylinderGeometry(3.01, 2.58, 0, 256, 1, true);
+    const noiseTex = createRingNoiseTexture(128);
+    const ringGeo = new THREE.CylinderGeometry(3.01, 2.58, 0, 128, 1, true);
     const ringMat = createCometRingMaterial({ noiseTex, isLight: false, full: 1, alpha: 0.85 });
     const ringMesh = new THREE.Mesh(ringGeo, ringMat);
     ringMesh.rotation.z = 0.06;
@@ -1547,7 +1845,8 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    composer.addPass(createAlphaBloomPass(0.55, 0.35, 0.93));
+    const menuBloomPass = createAlphaBloomPass(0.55, 0.35, 0.93);
+    composer.addPass(menuBloomPass);
     composer.addPass(new OutputPass());
 
     function resize() {
@@ -1558,6 +1857,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
       if (!w || !h) return;
       renderer.setSize(w, h, false);
       composer.setSize(w, h);
+      menuBloomPass.setSize(Math.max(48, Math.floor(w * 0.55)), Math.max(48, Math.floor(h * 0.55)));
       camera.aspect = w / h;
       camera.position.z = Math.max(9.6, 16 / camera.aspect);
       camera.updateProjectionMatrix();
@@ -1570,6 +1870,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     window.addEventListener(
       'pointermove',
       e => {
+        if (!isOpen) return;
         ptrX = e.clientX / window.innerWidth - 0.5;
         ptrY = e.clientY / window.innerHeight - 0.5;
       },
@@ -1598,7 +1899,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     });
 
     function animate(now) {
-      if (!isOpen) {
+      if (!isOpen || document.visibilityState !== 'visible') {
         rafId = 0;
         return;
       }
@@ -1622,12 +1923,19 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
       composer.render();
     }
 
+    document.addEventListener('visibilitychange', () => {
+      if (isOpen && document.visibilityState === 'visible' && !rafId) {
+        prevMs = performance.now();
+        rafId = requestAnimationFrame(animate);
+      }
+    });
+
     return {
       setOpen(open) {
         isOpen = open;
         if (open) {
           resize();
-          if (!rafId) {
+          if (!rafId && document.visibilityState === 'visible') {
             prevMs = performance.now();
             rafId = requestAnimationFrame(animate);
           }
@@ -1636,200 +1944,326 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
     };
   }
 
-  const menuCanvas = document.getElementById('g2-menu-canvas');
-  if (menuCanvas) {
+  function ensureMenuController() {
+    if (menuController || menuInitStarted) return menuController;
+    const menuCanvas = document.getElementById('g2-menu-canvas');
+    if (!menuCanvas) return null;
+    menuInitStarted = true;
     menuController = initMenuThreeJS(menuCanvas);
+    return menuController;
   }
 
   // =========================================================================
-  // 10. MASTER SCROLL ENGINE
+  // 10. MASTER SCROLL ENGINE (rAF-Coalesced, Batched Reads -> Writes, Culled)
   // =========================================================================
-  function onScroll() {
-    const scrollY = window.scrollY || window.pageYOffset;
-    const vh = window.innerHeight || 900;
+  const scrollCache = {
+    vw: window.innerWidth || 1440,
+    vh: window.innerHeight || 900,
+    storyTravel: 1,
+    towerTravel: 1,
+    dayNightTravel: 1,
+    amenitiesLen: 10851
+  };
 
-    if (headerBlur) {
-      headerBlur.classList.toggle('opacity-100', scrollY > 24);
-      headerBlur.classList.toggle('opacity-0', scrollY <= 24);
+  // Pre-query section inner nodes once (zero DOM queries during scroll)
+  const storySticky = storySection ? storySection.querySelector('.sticky') : null;
+  const storyPhase1 = storySticky ? storySticky.querySelector('.z-30.flex.flex-col.justify-between') : null;
+  const storySvg = storySticky ? (document.getElementById('g2-story-mark-svg') || storySticky.querySelector('svg[viewBox^="-341"]')) : null;
+  const storyMaskG = storySvg ? storySvg.querySelector('mask g') : null;
+  const storyStrokeG = storySvg ? storySvg.querySelector('svg > g') : null;
+  const storyFoundation = storySticky ? storySticky.querySelector('.z-30.grid') : null;
+
+  const portfolioParallaxCards = portfolioSection
+    ? Array.from(portfolioSection.querySelectorAll('figure > div.relative.overflow-hidden')).map((el, i) => ({
+        el,
+        factor: i % 3 === 0 ? -22 : i % 3 === 1 ? -36 : -28
+      }))
+    : [];
+
+  const towerTargets = (Array.isArray(HOME_DATA?.towerTargets) && HOME_DATA.towerTargets.length === 4)
+    ? HOME_DATA.towerTargets
+    : [21, 6, 4, 6];
+  const towerCards = towerSection
+    ? Array.from(towerSection.querySelectorAll('.z-20 > div.min-w-0')).map((card, idx) => ({
+        card,
+        numSpan: card.querySelector('.tabular-nums > span'),
+        target: towerTargets[idx] ?? 0,
+        lastVal: ''
+      }))
+    : [];
+
+  const amenitiesOl = amenitiesSection ? amenitiesSection.querySelector('ol') : null;
+  const amenitiesPath = amenitiesOl ? amenitiesOl.querySelector('svg path') : null;
+  if (amenitiesOl) {
+    if (amenitiesPath) amenitiesPath.style.strokeDasharray = `${scrollCache.amenitiesLen}px`;
+    amenitiesOl.querySelectorAll('li > div').forEach(div => {
+      div.style.opacity = '1';
+      div.style.transform = 'none';
+    });
+  }
+
+  const interiorsCards = interiorsSection
+    ? Array.from(interiorsSection.querySelectorAll('.flex-1 > div > div.relative')).map(card => ({
+        card,
+        innerImgWrap: card.querySelector('figure > div.absolute'),
+        loupes: Array.from(card.querySelectorAll(':scope > span.rounded-full'))
+      }))
+    : [];
+
+  const emblemPaths = emblemSection
+    ? Array.from(emblemSection.querySelectorAll('svg path[stroke^="url"]')).map(path => {
+        path.style.strokeDasharray = '1645.38px';
+        return path;
+      })
+    : [];
+  const emblemCircle = emblemSection ? emblemSection.querySelector('svg circle') : null;
+  if (emblemCircle) emblemCircle.style.strokeDasharray = '1167.56px';
+
+  const dayNightSec = dayNightWrapper ? dayNightWrapper.querySelector('section') : null;
+  const dayNightFrame = dayNightSec ? dayNightSec.querySelector('[data-plate="true"] > div') : null;
+  const dayNightLayers = dayNightFrame ? Array.from(dayNightFrame.querySelectorAll('.g2-bg')) : [];
+
+  const ctaOuter = ctaSection ? ctaSection.firstElementChild : null;
+  const ctaInner = ctaOuter ? ctaOuter.firstElementChild : null;
+  if (ctaOuter) {
+    ctaOuter.style.opacity = '1';
+    ctaOuter.style.transform = 'none';
+  }
+
+  function measureScrollMetrics() {
+    scrollCache.vh = window.innerHeight || 900;
+    scrollCache.vw = window.innerWidth || 1440;
+    const vh = scrollCache.vh;
+    if (storySection) scrollCache.storyTravel = Math.max(1, storySection.offsetHeight - vh);
+    if (towerSection) scrollCache.towerTravel = Math.max(1, towerSection.offsetHeight - vh);
+    if (dayNightSec) scrollCache.dayNightTravel = Math.max(1, dayNightSec.offsetHeight - vh);
+  }
+  measureScrollMetrics();
+
+  let lastScrolledPast24 = null;
+  let scrollForceAll = true;
+  let scrollRafId = 0;
+
+  const sectionActiveState = {
+    story: true,
+    portfolio: true,
+    tower: true,
+    amenities: true,
+    interiors: true,
+    emblem: true,
+    daynight: true,
+    cta: true
+  };
+
+  function runScrollFrame() {
+    scrollRafId = 0;
+    const force = scrollForceAll;
+    scrollForceAll = false;
+
+    // -----------------------------------------------------------------------
+    // PHASE 1: BATCHED LAYOUT READS (zero style writes during this phase)
+    // -----------------------------------------------------------------------
+    const scrollY = window.scrollY || window.pageYOffset;
+    const vh = scrollCache.vh;
+    const margin = 140;
+
+    const storyRect = storySection ? storySection.getBoundingClientRect() : null;
+    const portfolioRect = portfolioSection ? portfolioSection.getBoundingClientRect() : null;
+    const towerRect = towerSection ? towerSection.getBoundingClientRect() : null;
+    const amenitiesRect = amenitiesOl ? amenitiesOl.getBoundingClientRect() : null;
+    const interiorsRect = interiorsSection ? interiorsSection.getBoundingClientRect() : null;
+    const emblemRect = emblemSection ? emblemSection.getBoundingClientRect() : null;
+    const dayNightRect = dayNightSec ? dayNightSec.getBoundingClientRect() : null;
+    const ctaRect = ctaSection ? ctaSection.getBoundingClientRect() : null;
+
+    const headingReads = displayHeadingStates.map(state => ({
+      state,
+      rect: state.h2.getBoundingClientRect()
+    }));
+
+    const interiorsInRange = Boolean(interiorsRect && (interiorsRect.top < vh + margin && interiorsRect.bottom > -margin));
+    const interiorCardReads = (interiorsInRange || force)
+      ? interiorsCards.map(item => ({ item, rect: item.card.getBoundingClientRect() }))
+      : [];
+
+    // -----------------------------------------------------------------------
+    // PHASE 2: BATCHED STYLE WRITES (no layout reads interleaved)
+    // -----------------------------------------------------------------------
+    const past24 = scrollY > 24;
+    if (headerBlur && past24 !== lastScrolledPast24) {
+      lastScrolledPast24 = past24;
+      headerBlur.classList.toggle('opacity-100', past24);
+      headerBlur.classList.toggle('opacity-0', !past24);
     }
 
-    if (window.__updateHeroScroll) window.__updateHeroScroll(scrollY);
+    if (window.__updateHeroScroll && (scrollY <= vh * 2.2 || force)) {
+      window.__updateHeroScroll(scrollY);
+    }
 
-    if (storySection) {
-      const rect = storySection.getBoundingClientRect();
-      const totalTravel = Math.max(1, storySection.offsetHeight - vh);
-      const p = clamp01(-rect.top / totalTravel);
-
-      const stickyInner = storySection.querySelector('.sticky');
-      if (stickyInner) {
-        const phase1Overlay = stickyInner.querySelector('.z-30.flex.flex-col.justify-between');
-        const svgOverlay = document.getElementById('g2-story-mark-svg') || stickyInner.querySelector('svg[viewBox^="-341"]');
-        const maskG = svgOverlay ? svgOverlay.querySelector('mask g') : null;
-        const strokeG = svgOverlay ? svgOverlay.querySelector('svg > g') : null;
-        const foundationRow = stickyInner.querySelector('.z-30.grid');
-
+    if (storyRect && storySticky) {
+      const inRange = storyRect.top < vh + margin && storyRect.bottom > -margin;
+      if (inRange || sectionActiveState.story || force) {
+        sectionActiveState.story = inRange;
+        const p = clamp01(-storyRect.top / scrollCache.storyTravel);
         const p1 = clamp01(p / 0.42);
-        if (phase1Overlay) {
-          phase1Overlay.style.opacity = (1 - p1).toFixed(4);
-          phase1Overlay.style.transform = `translateY(${(-24 * p1).toFixed(2)}px)`;
+        if (storyPhase1) {
+          storyPhase1.style.opacity = (1 - p1).toFixed(4);
+          storyPhase1.style.transform = `translate3d(0, ${(-24 * p1).toFixed(2)}px, 0)`;
         }
-
         const scale = 1 + Math.pow(p, 2.35) * 28;
         const transformStr = `scale(${scale.toFixed(4)}) rotate(${(p * 360).toFixed(2)}deg)`;
-        if (maskG) maskG.style.transform = transformStr;
-        if (strokeG) strokeG.style.transform = transformStr;
-        if (svgOverlay) {
-          svgOverlay.style.opacity = (p > 0.78 ? clamp01(1 - (p - 0.78) / 0.18) : 1).toFixed(4);
+        if (storyMaskG) storyMaskG.style.transform = transformStr;
+        if (storyStrokeG) storyStrokeG.style.transform = transformStr;
+        if (storySvg) {
+          storySvg.style.opacity = (p > 0.78 ? clamp01(1 - (p - 0.78) / 0.18) : 1).toFixed(4);
         }
-
         const p2 = clamp01((p - 0.48) / 0.3);
-        if (foundationRow) {
-          foundationRow.style.opacity = p2.toFixed(4);
-          foundationRow.style.transform = p2 >= 0.99 ? 'none' : `translateY(${(26 * (1 - p2)).toFixed(2)}px)`;
+        if (storyFoundation) {
+          storyFoundation.style.opacity = p2.toFixed(4);
+          storyFoundation.style.transform = p2 >= 0.99 ? 'none' : `translate3d(0, ${(26 * (1 - p2)).toFixed(2)}px, 0)`;
         }
       }
     }
 
-    displayHeadings.forEach(h2 => {
-      const rect = h2.getBoundingClientRect();
+    headingReads.forEach(({ state, rect }) => {
       const p = clamp01((vh * 0.95 - rect.top) / (vh * 0.6));
-      const spans = Array.from(h2.children).filter(el => !el.classList.contains('sr-only'));
-      const visibleWrap = spans[1];
-      if (!visibleWrap) return;
-      const letterInners = visibleWrap.querySelectorAll('span > span.will-change-transform');
-      const total = letterInners.length || 1;
-      letterInners.forEach((el, i) => {
+      if (!force && Math.abs(p - state.lastP) < 0.0005) return;
+      state.lastP = p;
+      const isAnimating = p > 0.001 && p < 0.995;
+      const total = state.letters.length || 1;
+      state.letters.forEach((el, i) => {
         const delay = (i / total) * 0.28;
         const lp = clamp01((p - delay) / 0.72);
+        el.style.willChange = isAnimating && lp < 0.995 ? 'transform' : 'auto';
         el.style.transform =
           lp >= 0.995
             ? 'none'
-            : `translateY(${((1 - lp) * 100).toFixed(2)}%) rotateX(${((1 - lp) * 52).toFixed(2)}deg)`;
+            : `translate3d(0, ${((1 - lp) * 100).toFixed(2)}%, 0) rotateX(${((1 - lp) * 52).toFixed(2)}deg)`;
       });
     });
 
-    if (portfolioSection) {
-      const rect = portfolioSection.getBoundingClientRect();
-      const p = clamp01((vh - rect.top) / (vh + rect.height));
-      portfolioSection.querySelectorAll('figure > div.relative.overflow-hidden').forEach((card, i) => {
-        const factor = i % 3 === 0 ? -22 : i % 3 === 1 ? -36 : -28;
-        card.style.transform = `translateY(${(factor * p).toFixed(2)}px)`;
-      });
-    }
-
-    if (towerSection) {
-      const rect = towerSection.getBoundingClientRect();
-      const totalTravel = Math.max(1, towerSection.offsetHeight - vh);
-      const p = clamp01(-rect.top / totalTravel);
-      const enterP = clamp01((vh * 0.75 - rect.top) / (vh * 0.65));
-
-      if (towerController) towerController.setProgress(p);
-
-      const targets = (Array.isArray(HOME_DATA?.towerTargets) && HOME_DATA.towerTargets.length === 4)
-        ? HOME_DATA.towerTargets
-        : [21, 6, 4, 6];
-      towerSection.querySelectorAll('.z-20 > div.min-w-0').forEach((card, idx) => {
-        const cp = clamp01((enterP - idx * 0.12) / 0.55);
-        card.style.opacity = cp.toFixed(4);
-        card.style.transform = cp >= 0.99 ? 'none' : `translateY(${(-18 * (1 - cp)).toFixed(2)}px)`;
-        const numSpan = card.querySelector('.tabular-nums > span');
-        if (numSpan) numSpan.textContent = String(Math.round(targets[idx] * cp));
-      });
-    }
-
-    if (amenitiesSection) {
-      const ol = amenitiesSection.querySelector('ol');
-      if (ol) {
-        const rect = ol.getBoundingClientRect();
-        const p = clamp01((vh * 0.75 - rect.top) / (rect.height + vh * 0.25));
-        const path = ol.querySelector('svg path');
-        if (path) {
-          const totalLen = 10851;
-          path.style.strokeDasharray = `${totalLen}px`;
-          path.style.strokeDashoffset = `${(totalLen * (1 - p)).toFixed(1)}px`;
-        }
-        ol.querySelectorAll('li > div').forEach(div => {
-          div.style.opacity = '1';
-          div.style.transform = 'none';
+    if (portfolioRect && portfolioParallaxCards.length) {
+      const inRange = portfolioRect.top < vh + margin && portfolioRect.bottom > -margin;
+      if (inRange || sectionActiveState.portfolio || force) {
+        sectionActiveState.portfolio = inRange;
+        const p = clamp01((vh - portfolioRect.top) / (vh + portfolioRect.height));
+        portfolioParallaxCards.forEach(({ el, factor }) => {
+          el.style.transform = `translate3d(0, ${(factor * p).toFixed(2)}px, 0)`;
         });
       }
     }
 
-    if (interiorsSection) {
-      interiorsSection.querySelectorAll('.flex-1 > div > div.relative').forEach(card => {
-        const rect = card.getBoundingClientRect();
+    if (towerRect) {
+      const inRange = towerRect.top < vh + margin && towerRect.bottom > -margin;
+      if (inRange || sectionActiveState.tower || force) {
+        sectionActiveState.tower = inRange;
+        const p = clamp01(-towerRect.top / scrollCache.towerTravel);
+        const enterP = clamp01((vh * 0.75 - towerRect.top) / (vh * 0.65));
+
+        if (towerController) {
+          towerController.setProgress(p);
+          towerController.setBackdropOpacity(clamp01((towerRect.bottom / vh - 0.55) / 0.42));
+        }
+
+        towerCards.forEach((item, idx) => {
+          const cp = clamp01((enterP - idx * 0.12) / 0.55);
+          item.card.style.opacity = cp.toFixed(4);
+          item.card.style.transform = cp >= 0.99 ? 'none' : `translate3d(0, ${(-18 * (1 - cp)).toFixed(2)}px, 0)`;
+          const valStr = String(Math.round(item.target * cp));
+          if (item.numSpan && valStr !== item.lastVal) {
+            item.lastVal = valStr;
+            item.numSpan.textContent = valStr;
+          }
+        });
+      }
+    }
+
+    if (amenitiesRect && amenitiesPath) {
+      const inRange = amenitiesRect.top < vh + margin && amenitiesRect.bottom > -margin;
+      if (inRange || sectionActiveState.amenities || force) {
+        sectionActiveState.amenities = inRange;
+        const p = clamp01((vh * 0.75 - amenitiesRect.top) / (amenitiesRect.height + vh * 0.25));
+        amenitiesPath.style.strokeDashoffset = `${(scrollCache.amenitiesLen * (1 - p)).toFixed(1)}px`;
+      }
+    }
+
+    if (interiorCardReads.length || (interiorsSection && sectionActiveState.interiors && !interiorsInRange)) {
+      sectionActiveState.interiors = interiorsInRange;
+      interiorCardReads.forEach(({ item, rect }) => {
         const p = clamp01((vh * 0.95 - rect.top) / (vh * 0.55));
-        card.style.opacity = Math.max(0.85, p).toFixed(4);
-        card.style.transform = p >= 0.99 ? 'translateY(0vh)' : `translateY(${((1 - p) * 6).toFixed(2)}vh)`;
-
-        const innerImgWrap = card.querySelector('figure > div.absolute');
-        if (innerImgWrap) {
-          const scrollRatio = clamp01((vh - rect.top) / (vh + rect.height));
-          innerImgWrap.style.transform = `translateY(${(-6 * scrollRatio).toFixed(2)}%)`;
+        item.card.style.opacity = Math.max(0.85, p).toFixed(4);
+        item.card.style.transform = p >= 0.99 ? 'translate3d(0, 0vh, 0)' : `translate3d(0, ${((1 - p) * 6).toFixed(2)}vh, 0)`;
+        const scrollRatio = clamp01((vh - rect.top) / (vh + rect.height));
+        if (item.innerImgWrap) {
+          item.innerImgWrap.style.transform = `translate3d(0, ${(-6 * scrollRatio).toFixed(2)}%, 0)`;
         }
-        const loupes = card.querySelectorAll(':scope > span.rounded-full');
-        loupes.forEach((loupe, li) => {
-          const scrollRatio = clamp01((vh - rect.top) / (vh + rect.height));
+        item.loupes.forEach((loupe, li) => {
           const y = li === 0 ? 18 * (1 - scrollRatio * 0.7) : -26 * scrollRatio;
-          loupe.style.transform = `translateY(${y.toFixed(1)}px)`;
+          loupe.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0)`;
         });
       });
     }
 
-    if (emblemSection) {
-      const rect = emblemSection.getBoundingClientRect();
-      const p = clamp01((vh * 0.9 - rect.top) / (vh * 0.65));
-      emblemSection.querySelectorAll('svg path[stroke^="url"]').forEach(path => {
-        const len = 1645.38;
-        path.style.strokeDasharray = `${len}px`;
-        path.style.strokeDashoffset = `${(len * (1 - p)).toFixed(2)}px`;
-      });
-      const circle = emblemSection.querySelector('svg circle');
-      if (circle) {
-        const clen = 1167.56;
-        circle.style.strokeDasharray = `${clen}px`;
-        circle.style.strokeDashoffset = `${(clen * (1 - p)).toFixed(2)}px`;
-      }
-    }
-
-    if (dayNightWrapper) {
-      const sec = dayNightWrapper.querySelector('section');
-      if (sec) {
-        const rect = sec.getBoundingClientRect();
-        const totalTravel = Math.max(1, sec.offsetHeight - vh);
-        const p = clamp01(-rect.top / totalTravel);
-
-        const frame = sec.querySelector('[data-plate="true"] > div');
-        if (frame) {
-          const expandP = clamp01(p / 0.22);
-          frame.style.clipPath = `inset(0% ${(6 * (1 - expandP)).toFixed(2)}% round ${(56 * (1 - expandP)).toFixed(1)}px)`;
-
-          const layers = Array.from(frame.querySelectorAll('.g2-bg'));
-          const stage = p * (layers.length - 1);
-          layers.forEach((layer, idx) => {
-            layer.style.opacity = idx === 0 ? '1' : clamp01(stage - (idx - 1)).toFixed(4);
-          });
+    if (emblemRect) {
+      const inRange = emblemRect.top < vh + margin && emblemRect.bottom > -margin;
+      if (inRange || sectionActiveState.emblem || force) {
+        sectionActiveState.emblem = inRange;
+        const p = clamp01((vh * 0.9 - emblemRect.top) / (vh * 0.65));
+        emblemPaths.forEach(path => {
+          path.style.strokeDashoffset = `${(1645.38 * (1 - p)).toFixed(2)}px`;
+        });
+        if (emblemCircle) {
+          emblemCircle.style.strokeDashoffset = `${(1167.56 * (1 - p)).toFixed(2)}px`;
         }
       }
     }
 
-    if (ctaSection) {
-      const rect = ctaSection.getBoundingClientRect();
-      const p = clamp01((vh - rect.top) / (vh + rect.height));
-      const outer = ctaSection.firstElementChild;
-      if (outer) {
-        outer.style.opacity = '1';
-        outer.style.transform = 'none';
-        if (outer.firstElementChild) {
-          outer.firstElementChild.style.transform = `translateY(${(70 - p * 22).toFixed(2)}px)`;
+    if (dayNightRect && dayNightFrame) {
+      const inRange = dayNightRect.top < vh + margin && dayNightRect.bottom > -margin;
+      if (inRange || sectionActiveState.daynight || force) {
+        sectionActiveState.daynight = inRange;
+        const p = clamp01(-dayNightRect.top / scrollCache.dayNightTravel);
+        const expandP = clamp01(p / 0.22);
+        dayNightFrame.style.clipPath = `inset(0% ${(6 * (1 - expandP)).toFixed(2)}% round ${(56 * (1 - expandP)).toFixed(1)}px)`;
+
+        const stage = p * (dayNightLayers.length - 1);
+        const opacities = dayNightLayers.map((_, idx) => (idx === 0 ? 1 : clamp01(stage - (idx - 1))));
+        let topOpaqueIdx = 0;
+        for (let i = 0; i < opacities.length; i++) {
+          if (opacities[i] >= 0.999) topOpaqueIdx = i;
         }
+        dayNightLayers.forEach((layer, idx) => {
+          const op = opacities[idx];
+          const hidden = idx < topOpaqueIdx || op <= 0.001;
+          layer.style.visibility = hidden ? 'hidden' : 'visible';
+          layer.style.opacity = hidden ? '0' : op.toFixed(4);
+        });
+      }
+    }
+
+    if (ctaRect && ctaInner) {
+      const inRange = ctaRect.top < vh + margin && ctaRect.bottom > -margin;
+      if (inRange || sectionActiveState.cta || force) {
+        sectionActiveState.cta = inRange;
+        const p = clamp01((vh - ctaRect.top) / (vh + ctaRect.height));
+        ctaInner.style.transform = `translate3d(0, ${(70 - p * 22).toFixed(2)}px, 0)`;
       }
     }
   }
 
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll, { passive: true });
-  onScroll();
+  function scheduleScrollUpdate(isResize = false) {
+    if (isResize) {
+      measureScrollMetrics();
+      scrollForceAll = true;
+    }
+    if (!scrollRafId) {
+      scrollRafId = requestAnimationFrame(runScrollFrame);
+    }
+  }
+
+  window.addEventListener('scroll', () => scheduleScrollUpdate(false), { passive: true });
+  window.addEventListener('resize', () => scheduleScrollUpdate(true), { passive: true });
+  runScrollFrame();
 
   // =========================================================================
   // 11. PRO PLATFORM INTERACTIVE UTILITIES (DIALOGS, ARIA FORMS, EMI, LIGHTBOX)

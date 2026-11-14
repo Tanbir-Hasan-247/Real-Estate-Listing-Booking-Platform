@@ -61,32 +61,19 @@
   --pn-shadow: 0 20px 50px -24px rgba(13, 58, 94, 0.14);
 }
 
-/* Restore native pointer cleanly on form controls, dialogs & dense dashboard tables */
-.g2 input,
-.g2 select,
-.g2 textarea,
-.g2 label,
-.g2 option,
-.g2 dialog,
-.g2 dialog *,
-.g2 .pn-native-cursor,
-.g2 .pn-native-cursor * {
-  cursor: auto !important;
-}
-
-.g2 button,
-.g2 a,
-.g2 [role="button"],
-.g2 select,
-.g2 input[type="checkbox"],
-.g2 input[type="radio"],
+/* Standard OS pointer across interactive controls */
+.g2 button:not(:disabled),
+.g2 a[href],
+.g2 [role="button"]:not([aria-disabled="true"]),
+.g2 input[type="checkbox"]:not(:disabled),
+.g2 input[type="radio"]:not(:disabled),
 .g2 summary {
   cursor: pointer;
 }
 
-.g2[data-g2-theme="dark"] .g2-cursor-enabled a:not(dialog a),
-.g2[data-g2-theme="light"] .g2-cursor-enabled a:not(dialog a) {
-  cursor: none;
+.g2 button:disabled,
+.g2 [aria-disabled="true"] {
+  cursor: default;
 }
 
 /* Reduced motion support */
@@ -1096,7 +1083,7 @@ dialog.pn-dialog::backdrop {
   color: var(--g2-sand);
   text-align: left;
   font: inherit;
-  cursor: pointer !important;
+  cursor: pointer;
   transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 

@@ -29,8 +29,6 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
   }
   const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
 
-  const cursorRing = g2.querySelector('[data-g2-cursor="ring"]');
-  const cursorDot = g2.querySelector('[data-g2-cursor="dot"]');
   const header = g2.querySelector('header');
   const menuDialog = document.getElementById('g2-main-menu');
 
@@ -70,99 +68,6 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
   const clamp01 = v => Math.min(1, Math.max(0, v));
   const range01 = (v, a, b) => clamp01((v - a) / (b - a));
   const easeInOutQuad = t => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
-
-  // =========================================================================
-  // 1. CUSTOM CURSOR (RING + DOT) — Idle-Paused On Demand
-  // =========================================================================
-  if (!prefersReducedMotion && window.matchMedia('(pointer: fine)').matches && cursorRing && cursorDot) {
-    let mouseX = -100;
-    let mouseY = -100;
-    let ringX = -100;
-    let ringY = -100;
-    let cursorVisible = false;
-    let lastTarget = null;
-    let lastHideCustom = null;
-    let lastOnInteractive = null;
-    let cursorRafId = 0;
-
-    const tickCursor = () => {
-      cursorRafId = 0;
-      if (!cursorVisible) return;
-      const dx = mouseX - ringX;
-      const dy = mouseY - ringY;
-      if (Math.abs(dx) <= 0.15 && Math.abs(dy) <= 0.15) {
-        ringX = mouseX;
-        ringY = mouseY;
-        cursorRing.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%)`;
-        return;
-      }
-      ringX += dx * 0.18;
-      ringY += dy * 0.18;
-      cursorRing.style.transform = `translate3d(${ringX.toFixed(1)}px, ${ringY.toFixed(1)}px, 0) translate(-50%, -50%)`;
-      cursorRafId = requestAnimationFrame(tickCursor);
-    };
-
-    const ensureCursorTick = () => {
-      if (!cursorRafId && cursorVisible) {
-        cursorRafId = requestAnimationFrame(tickCursor);
-      }
-    };
-
-    window.addEventListener('mousemove', e => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      if (!cursorVisible) {
-        ringX = mouseX;
-        ringY = mouseY;
-        cursorVisible = true;
-        cursorRing.style.opacity = '1';
-        cursorDot.style.opacity = '1';
-        cursorRing.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%)`;
-      }
-      cursorDot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
-
-      if (e.target && e.target !== lastTarget) {
-        lastTarget = e.target;
-        const hideCustom = Boolean(
-          e.target.closest?.('dialog, input, select, textarea, option, iframe, [data-native-cursor]')
-        );
-        if (hideCustom !== lastHideCustom) {
-          lastHideCustom = hideCustom;
-          cursorRing.style.visibility = hideCustom ? 'hidden' : 'visible';
-          cursorDot.style.visibility = hideCustom ? 'hidden' : 'visible';
-        }
-        const onInteractive = Boolean(
-          e.target.closest?.("a, button, [role='button'], input, select, textarea, label, summary")
-        );
-        if (onInteractive !== lastOnInteractive) {
-          lastOnInteractive = onInteractive;
-          cursorRing.style.width = onInteractive ? '64px' : '40px';
-          cursorRing.style.height = onInteractive ? '64px' : '40px';
-          cursorRing.style.backgroundColor = onInteractive
-            ? 'color-mix(in srgb, var(--g2-gold) 12%, transparent)'
-            : 'transparent';
-        }
-      }
-      ensureCursorTick();
-    }, { passive: true });
-
-    document.addEventListener('mouseleave', () => {
-      cursorVisible = false;
-      cursorRing.style.opacity = '0';
-      cursorDot.style.opacity = '0';
-      if (cursorRafId) {
-        cancelAnimationFrame(cursorRafId);
-        cursorRafId = 0;
-      }
-    });
-    document.addEventListener('mouseenter', () => {
-      if (mouseX >= 0 && mouseY >= 0) {
-        cursorVisible = true;
-        cursorRing.style.opacity = '1';
-        cursorDot.style.opacity = '1';
-      }
-    });
-  }
 
   // =========================================================================
   // 2. HEADER BLUR, DARK/LIGHT THEME TOGGLE & MENU DRAWER

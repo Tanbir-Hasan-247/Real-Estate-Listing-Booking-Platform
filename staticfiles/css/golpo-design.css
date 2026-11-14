@@ -9,18 +9,6 @@ html.lenis,html.lenis body{height:auto}.lenis:not(.lenis-autoToggle).lenis-stopp
 
 /* Inline style */
 
-        .g2, .g2 * { cursor: none; }
-        /* ⚠ A <dialog> opens in the browser's top layer, ABOVE this
-           component's ring — so inside one the drawn cursor is underneath
-           and the system one is switched off, and the pointer simply
-           vanished (the About page's biography panel, 11 Oct 2026). Inside a
-           dialog the system cursor comes back. */
-        .g2 dialog, .g2 dialog * { cursor: auto; }
-        .g2 dialog button, .g2 dialog a { cursor: pointer; }
-      
-
-/* Inline style */
-
 .g2-pin { position: relative; width: 28px; height: 38px; padding: 0; border: 0; background: none; cursor: pointer; transition: transform .35s cubic-bezier(.16,1,.3,1); }
 .g2-pin svg { display: block; width: 28px; height: 38px; filter: drop-shadow(0 3px 6px rgba(0,0,0,.35)); }
 .g2-pin svg path { fill: #eb5818; transition: fill .25s; }
